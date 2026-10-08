@@ -189,7 +189,7 @@ export default function ClaimShield3DHero({
       <div className="px-4 py-2.5 border-b border-[#acf2e5]/20 flex items-center justify-between text-[11px] font-mono text-[#f2fcff]/80 bg-[#042126]">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-[#209b47]" />
-          <span>CLINICAL FWA PIPELINE TELEMETRY // SEED=42</span>
+          <span>MULTI-SIGNAL EVIDENCE PIPELINE // 4 ENGINES</span>
         </div>
         <span className="text-[#acf2e5] font-semibold">
           STAGE {stages[activeStage]?.step}: {stages[activeStage]?.name}

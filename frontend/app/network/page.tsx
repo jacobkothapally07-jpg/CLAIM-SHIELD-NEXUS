@@ -69,7 +69,7 @@ export default function NetworkIntelligencePage() {
               Network Intelligence &amp; Referral Ring Topology
             </h2>
             <p className="text-xs text-[#042126]/85 font-medium mt-0.5">
-              ClaimShield doesn&apos;t analyze claims in isolation. It identifies suspicious relationships across providers, facilities, members and referrals.
+              ClaimShield does not analyze claims in isolation. Network Intelligence identifies suspicious relationships across providers, facilities, members and referrals.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -162,7 +162,7 @@ export default function NetworkIntelligencePage() {
           Detected Suspicious Network &amp; Referral Clusters
         </h3>
         <p className="text-xs text-[#042126]/75 mb-4">
-          High-density provider-facility-referral clusters flagged by NetworkX centrality and reciprocity analysis
+          Reciprocal referral patterns, shared member relationships, abnormal referral density, and provider/facility clusters identified across the dataset:
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -195,17 +195,17 @@ export default function NetworkIntelligencePage() {
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-[#042126]/10 flex items-center justify-between text-xs">
+              <div className="pt-3 border-t border-[#042126]/10 flex flex-wrap items-center justify-between gap-2 text-xs">
                 <span className="text-[#209b47] font-mono font-bold">
-                  Exposure: {formatINR(cl.potential_exposure)}
+                  {formatINR(cl.potential_exposure)}
                 </span>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setCaseFilter(cl.case_id)}
-                    className="text-[#15497e] hover:text-[#209b47] underline font-medium"
+                <div className="flex items-center gap-2.5">
+                  <Link
+                    href={`/providers/${cl.provider_id}`}
+                    className="text-[#15497e] hover:text-[#209b47] underline font-semibold"
                   >
-                    Focus Graph
-                  </button>
+                    Investigate Provider
+                  </Link>
                   <Link
                     href={`/cases/${cl.case_id}`}
                     className="text-[#209b47] hover:text-[#005f68] font-semibold flex items-center gap-1"

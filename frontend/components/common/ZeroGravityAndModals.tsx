@@ -59,7 +59,7 @@ export function ZeroGravityParticleCanvas() {
       "rgba(4, 33, 38, 0.14)", // Obsidian Pine #042126
     ];
 
-    const particleCount = 46;
+    const particleCount = width < 768 ? 18 : 42;
     const particles = Array.from({ length: particleCount }, (_, i) => ({
       x: ((i * 197) % 100) * 0.01 * width,
       y: ((i * 353) % 100) * 0.01 * height,
@@ -145,44 +145,50 @@ export function ZeroGravityParticleCanvas() {
 
 /**
  * 2. ANIMATED TYPEWRITER RISK ENGINE TERMINAL POPOVER
- * Triggered when clicking "Launch Risk Analysis" in the header or dashboard.
+ * Triggered when clicking "Launch Risk Analysis" or "ANALYZE CLAIM".
  */
 const AGENT_SIMULATION_LOGS = [
   {
-    agent: "INGESTION_AGENT",
-    weight: "SEED=42",
-    text: "Streaming 10,000 synthetic claims across 500 providers & 1,216 referral edges...",
+    agent: "STEP 01 • CLAIM INGESTION",
+    weight: "INPUT",
+    text: "Receiving claim data... (CLM-001842 • PROV-0042 • Billed ₹1,45,000)",
     signal: null,
   },
   {
-    agent: "RULE_ENGINE_AGENT",
-    weight: "40% WT",
-    text: "Auditing PROV-0042 (CLM-001842): Duplicate submission detected within 14m + Cross-region encounter <28m.",
-    signal: "DUPLICATE_BILLING (+20) • IMPOSSIBLE_TIMING (+25)",
+    agent: "STEP 02 • RULE ENGINE",
+    weight: "40% WEIGHT",
+    text: "Checking policy rules... Duplicate billing within 14m + cross-region encounter in 28m.",
+    signal: "DUPLICATE BILLING (+20) • IMPOSSIBLE TIMING (+25)",
   },
   {
-    agent: "ISOLATION_FOREST_AGENT",
-    weight: "30% WT",
-    text: "Evaluating 150-tree statistical outlier model: Billed ₹1,45,000 vs ₹32,000 specialty baseline (z = +4.1σ).",
-    signal: "STATISTICAL_ANOMALY (ML Score: 92/100)",
+    agent: "STEP 03 • ISOLATION FOREST",
+    weight: "30% WEIGHT",
+    text: "Analyzing anomalies... Billed ₹1,45,000 vs ₹32,000 specialty baseline (4.5x peer norm).",
+    signal: "ABNORMAL BILLING & STATISTICAL OUTLIER (92/100)",
   },
   {
-    agent: "NETWORKX_GRAPH_AGENT",
-    weight: "20% WT",
-    text: "Tracing referral topology: Closed-loop reciprocity ring detected between PROV-0042 ↔ PROV-0108 ↔ FAC-0004.",
-    signal: "REFERRAL_RING_TOPOLOGY (Graph Score: 89/100)",
+    agent: "STEP 04 • NETWORK INTELLIGENCE",
+    weight: "20% WEIGHT",
+    text: "Checking provider/network relationships... 78% closed-loop referral ring across 3 facilities.",
+    signal: "REFERRAL & NETWORK ANOMALY (89/100)",
   },
   {
-    agent: "TEMPORAL_VELOCITY_AGENT",
-    weight: "10% WT",
-    text: "Measuring claim velocity: 44 claims/day burst (>4.8x specialty peer average).",
-    signal: "TEMPORAL_VELOCITY_SPIKE (Temporal Score: 95/100)",
+    agent: "STEP 05 • TEMPORAL ANALYSIS",
+    weight: "10% WEIGHT",
+    text: "Evaluating temporal patterns... 44 claims/day velocity spike (4.9x provider baseline).",
+    signal: "TEMPORAL VELOCITY SPIKE (95/100)",
   },
   {
-    agent: "SIU_SYNTHESIS_AGENT",
-    weight: "COMPOSITE",
-    text: "Composite Risk = 94 / 100 (CRITICAL). Routing CASE-1842 to human SIU investigator for final decision.",
-    signal: "INVESTIGATION_RECOMMENDED • EXPOSURE ₹1,84,500",
+    agent: "STEP 06 • COMPOSITE RISK",
+    weight: "94 / 100",
+    text: "Calculating composite risk... Normalized multi-engine score = 94 / 100 (CRITICAL).",
+    signal: "POTENTIAL EXPOSURE: ₹1,84,500",
+  },
+  {
+    agent: "STEP 07 • SIU RECOMMENDATION",
+    weight: "HUMAN DECISION",
+    text: "Investigation recommended. Routing CASE-1842 to human SIU investigator for final decision.",
+    signal: "HIGH RISK • INVESTIGATION RECOMMENDED • REVIEW REQUIRED",
   },
 ];
 
@@ -216,14 +222,14 @@ export function RiskEngineTerminalModal({
     const currentLog = AGENT_SIMULATION_LOGS[visibleLines];
     if (typedChars < currentLog.text.length) {
       const timer = setTimeout(() => {
-        setTypedChars((prev) => prev + 3);
-      }, 16);
+        setTypedChars((prev) => prev + 6);
+      }, 12);
       return () => clearTimeout(timer);
     } else {
       const nextLineTimer = setTimeout(() => {
         setVisibleLines((prev) => prev + 1);
         setTypedChars(0);
-      }, 220);
+      }, 110);
       return () => clearTimeout(nextLineTimer);
     }
   }, [open, running, visibleLines, typedChars]);

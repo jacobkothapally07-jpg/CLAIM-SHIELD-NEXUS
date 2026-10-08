@@ -72,11 +72,26 @@ export default function RelationshipGraph({
         (e) => e.source === selectedNode.id || e.target === selectedNode.id
       )
     : [];
+  const connectedNodeIds = new Set<string>(
+    selectedNode
+      ? [
+          selectedNode.id,
+          ...connectedEdges.flatMap((e) => [e.source, e.target]),
+        ]
+      : []
+  );
+
   const facilityCount = connectedEdges.filter((e) =>
     e.label.includes("FACILITY")
   ).length;
   const referralCount = connectedEdges.filter((e) =>
     e.label.includes("REFERRAL")
+  ).length;
+  const memberCount = connectedEdges.filter(
+    (e) =>
+      e.source.startsWith("MEM-") ||
+      e.target.startsWith("MEM-") ||
+      e.label.includes("MEMBER")
   ).length;
   const claimCount = connectedEdges.filter(
     (e) =>
@@ -86,12 +101,27 @@ export default function RelationshipGraph({
   ).length;
   const suspiciousEdgeCount = connectedEdges.filter((e) => e.suspicious).length;
 
+  // Derive real relationship patterns from connected edges
+  const detectedPatterns: string[] = [];
+  if (referralCount > 0) {
+    detectedPatterns.push("Reciprocal referral pattern");
+  }
+  if (memberCount > 0) {
+    detectedPatterns.push("Shared member relationship");
+  }
+  if (suspiciousEdgeCount >= 2) {
+    detectedPatterns.push("Abnormal referral density");
+  }
+  if (facilityCount > 0) {
+    detectedPatterns.push("Provider / facility cluster");
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
       <div className="lg:col-span-3 nexus-glass-card rounded-2xl overflow-hidden">
         <div className="px-5 py-3 border-b border-[#042126]/10 flex flex-wrap items-center justify-between gap-2 text-xs bg-[#042126] text-[#f2fcff]">
           <span className="font-mono text-[11px] text-[#acf2e5] font-semibold">
-            ENTITY TOPOLOGY GRAPH // CLICK ANY NODE TO INSPECT RELATIONSHIPS
+            ENTITY TOPOLOGY GRAPH // CLICK ANY NODE TO HIGHLIGHT CONNECTED RELATIONSHIPS
           </span>
           <div className="flex flex-wrap items-center gap-3 text-[#f2fcff]">
             <span className="flex items-center gap-1">
@@ -122,17 +152,30 @@ export default function RelationshipGraph({
             const s = positions[edge.source];
             const t = positions[edge.target];
             if (!s || !t) return null;
+            const isConnectedEdge =
+              !selectedNode ||
+              edge.source === selectedNode.id ||
+              edge.target === selectedNode.id;
             const midX = (s.x + t.x) / 2;
             const midY = (s.y + t.y) / 2;
             return (
-              <g key={edge.id}>
+              <g
+                key={edge.id}
+                opacity={isConnectedEdge ? 1 : 0.25}
+              >
                 <line
                   x1={s.x}
                   y1={s.y}
                   x2={t.x}
                   y2={t.y}
-                  stroke={edge.suspicious ? "#b91c1c" : "rgba(4, 33, 38, 0.18)"}
-                  strokeWidth={edge.suspicious ? 2 : 1.5}
+                  stroke={
+                    edge.suspicious
+                      ? "#b91c1c"
+                      : isConnectedEdge && selectedNode
+                      ? "#209b47"
+                      : "rgba(4, 33, 38, 0.18)"
+                  }
+                  strokeWidth={edge.suspicious || isConnectedEdge ? 2.2 : 1.5}
                   strokeDasharray={edge.suspicious ? "5,3" : undefined}
                 />
                 <text
@@ -155,6 +198,8 @@ export default function RelationshipGraph({
             if (!pos) return null;
             const colors = getNodeColor(node);
             const isSelected = selectedNode?.id === node.id;
+            const isConnected =
+              !selectedNode || connectedNodeIds.has(node.id);
             const r = node.type === "Provider" ? 25 : node.type === "Claim" ? 16 : 20;
 
             return (
@@ -163,13 +208,23 @@ export default function RelationshipGraph({
                 transform={`translate(${pos.x}, ${pos.y})`}
                 onClick={() => setSelectedNode(node)}
                 className="cursor-pointer"
+                opacity={isConnected ? 1 : 0.35}
               >
                 {isSelected && (
                   <circle
                     r={r + 5}
                     fill="none"
                     stroke="#209b47"
-                    strokeWidth="2"
+                    strokeWidth="2.5"
+                  />
+                )}
+                {!isSelected && isConnected && selectedNode && (
+                  <circle
+                    r={r + 3}
+                    fill="none"
+                    stroke="#005f68"
+                    strokeWidth="1.5"
+                    strokeDasharray="3,2"
                   />
                 )}
                 <circle
@@ -202,7 +257,7 @@ export default function RelationshipGraph({
         </svg>
       </div>
 
-      {/* Node Inspector Panel (Requirement 7) */}
+      {/* Node Inspector Panel (Requirement 8) */}
       <div className="nexus-glass-card rounded-2xl p-5 flex flex-col justify-between">
         <div>
           <div className="text-xs font-mono uppercase tracking-wider text-[#005f68] font-semibold mb-3">
@@ -219,26 +274,33 @@ export default function RelationshipGraph({
                 </div>
               </div>
 
-              {/* Structured Node Fields (Provider, Risk, Claims, Facilities, Referrals, Network Signals) */}
+              {/* Structured Node Fields (Provider, Risk Score, Claims, Facilities, Referral Connections, Network Signals) */}
               <div className="p-3 rounded-xl bg-[#f2fcff] border border-[#042126]/10 text-xs text-[#042126] space-y-1.5">
                 <div className="flex justify-between">
-                  <span className="text-[#042126]/70">Risk Level:</span>
-                  <span className="uppercase font-mono font-bold text-[#b91c1c]">
-                    {selectedNode.risk}{" "}
-                    {selectedNode.risk_score ? `(${selectedNode.risk_score}/100)` : ""}
+                  <span className="text-[#042126]/70">Entity / Provider:</span>
+                  <span className="font-mono font-bold text-[#042126]">
+                    {selectedNode.id}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#042126]/70">Facilities Linked:</span>
+                  <span className="text-[#042126]/70">Risk Score:</span>
+                  <span className="uppercase font-mono font-bold text-[#b91c1c]">
+                    {selectedNode.risk_score
+                      ? `${selectedNode.risk_score} / 100 (${selectedNode.risk})`
+                      : selectedNode.risk}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#042126]/70">Claims:</span>
+                  <span className="font-mono font-semibold">{claimCount}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#042126]/70">Facilities:</span>
                   <span className="font-mono font-semibold">{facilityCount}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#042126]/70">Referral Connections:</span>
                   <span className="font-mono font-semibold">{referralCount}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#042126]/70">Connected Claims:</span>
-                  <span className="font-mono font-semibold">{claimCount}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#042126]/70">Network Signals:</span>
@@ -251,14 +313,33 @@ export default function RelationshipGraph({
                 </div>
               </div>
 
-              {/* Contextual Action Links */}
+              {/* Identified Topology Patterns */}
+              {detectedPatterns.length > 0 && (
+                <div>
+                  <div className="text-[10px] font-mono uppercase text-[#005f68] font-bold mb-1">
+                    Identified Topology Patterns:
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {detectedPatterns.map((pat) => (
+                      <span
+                        key={pat}
+                        className="text-[10px] font-medium px-2 py-0.5 rounded bg-[#fee2e2]/70 text-[#b91c1c] border border-[#b91c1c]/25"
+                      >
+                        • {pat}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Contextual Action Links (Requirement 8: INVESTIGATE PROVIDER) */}
               {selectedNode.id.startsWith("PROV-") && (
                 <div className="flex flex-wrap gap-2">
                   <Link
                     href={`/providers/${selectedNode.id}`}
-                    className="flex-1 text-center px-3 py-1.5 rounded-full bg-[#209b47] hover:bg-[#1b843c] text-white text-xs font-semibold transition-colors"
+                    className="flex-1 text-center px-3 py-2 rounded-full bg-[#209b47] hover:bg-[#1b843c] text-white text-xs font-semibold transition-colors"
                   >
-                    Open Provider ({selectedNode.id})
+                    INVESTIGATE PROVIDER ({selectedNode.id})
                   </Link>
                 </div>
               )}
@@ -267,7 +348,7 @@ export default function RelationshipGraph({
                 <div className="text-xs font-mono text-[#005f68] font-semibold uppercase mb-1.5">
                   Connected Relationships ({connectedEdges.length})
                 </div>
-                <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
                   {connectedEdges.map((e) => {
                     const other =
                       e.source === selectedNode.id ? e.target : e.source;

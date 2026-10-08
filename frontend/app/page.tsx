@@ -61,14 +61,14 @@ const ClaimShield3DHero = dynamic(
 
 const DETECTION_PIPELINE_STAGES = [
   {
-    id: "ingestion",
+    id: "claim",
     step: "01",
-    title: "CLAIM INGESTION",
+    title: "CLAIM",
     weight: "INPUT",
     summary:
-      "Ingests structured healthcare claim records including provider, member, facility, procedure code, billed amount, and timestamp.",
+      "Receives healthcare claim submissions including provider, member, facility, procedure code, billed amount and encounter timestamp.",
     technical:
-      "Processes 10,000+ synthetic claims across 500 providers, 100 facilities, and 1,000 members generated deterministically with RANDOM_SEED = 42.",
+      "Processes 10,000+ synthetic claims across 500 providers, 1,000 members and 100 facilities.",
   },
   {
     id: "rules",
@@ -77,7 +77,7 @@ const DETECTION_PIPELINE_STAGES = [
     weight: "40%",
     summary: "Checks claims against configurable fraud and policy rules.",
     technical:
-      "Evaluates 10 deterministic FWA policy detectors: duplicate billing (+20), impossible cross-region timing (+25), excessive utilization (+15), abnormal billing (+15), upcoding (+15), unbundling (+15), and phantom services (+18).",
+      "Evaluates 10 deterministic policy detectors: duplicate billing (+20), impossible timing (+25), excessive utilization (+15), abnormal billing (+15), upcoding (+15), unbundling (+15) and phantom service (+18).",
   },
   {
     id: "isolation_forest",
@@ -86,7 +86,7 @@ const DETECTION_PIPELINE_STAGES = [
     weight: "30%",
     summary: "Identifies unusual claim patterns and statistical outliers.",
     technical:
-      "Unsupervised Scikit-learn IsolationForest (150 estimators) scoring 10 provider/claim behavioral features with z-score feature attribution against specialty peers.",
+      "Unsupervised Isolation Forest anomaly detection model scoring claim and provider behavioral features against specialty peers.",
   },
   {
     id: "network",
@@ -96,36 +96,43 @@ const DETECTION_PIPELINE_STAGES = [
     summary:
       "Detects suspicious relationships between providers, facilities and members.",
     technical:
-      "NetworkX graph topology engine analyzing degree centrality, PageRank, reciprocal referral loops, and multi-facility shared member cliques across 1,216+ referral ties.",
+      "NetworkX graph topology analysis identifying reciprocal referral rings, shared member cliques and high-density facility hubs across 1,216+ referral relationships.",
   },
   {
     id: "temporal",
     step: "05",
     title: "TEMPORAL ANALYSIS",
     weight: "10%",
-    summary: "Detects unusual timing, frequency and claim velocity.",
+    summary: "Identifies unusual timing, frequency and claim velocity.",
     technical:
-      "Evaluates monthly claim acceleration (>4x provider baseline), rapid <15 minute claim bursts, and impossible cross-region member encounter intervals (<1 hour).",
+      "Detects claim volume acceleration (>4x provider baseline), rapid submission bursts and impossible cross-region encounter intervals (<1 hour).",
   },
   {
     id: "composite",
     step: "06",
-    title: "COMPOSITE RISK SCORE",
+    title: "COMPOSITE RISK",
     weight: "0–100",
-    summary:
-      "Combines all 4 weighted detection engines into an explainable 0–100 risk score with signal-level attribution.",
+    summary: "Combines evidence signals into a normalized risk score.",
     technical:
-      "Formula: Final Score = 40% Rule Engine + 30% Isolation Forest + 20% Network Intelligence + 10% Temporal Analysis. Categorized into Low (0–30), Medium (31–60), High (61–80), and Critical (81–100).",
+      "Weighted score = 40% Rule Engine + 30% Isolation Forest + 20% Network Intelligence + 10% Temporal Analysis. Categorized into Low (0–30), Medium (31–60), High (61–80) and Critical (81–100).",
   },
   {
     id: "siu",
     step: "07",
     title: "SIU INVESTIGATION",
-    weight: "HUMAN DECISION",
-    summary:
-      "Prioritizes and explains suspicious cases for SIU investigators. Final investigation decisions remain with humans.",
+    weight: "QUEUE",
+    summary: "Prioritizes cases for human investigation.",
     technical:
-      "Human-in-the-loop governance: ClaimShield never declares automated fraud. Investigators inspect correlated evidence, review network topology, and record audit decisions (Under Review, Escalate, Resolve, Dismiss).",
+      "Ranks suspicious cases in the SIU Priority Queue by composite risk score, financial exposure and correlated evidence strength.",
+  },
+  {
+    id: "decision",
+    step: "08",
+    title: "HUMAN DECISION",
+    weight: "FINAL",
+    summary: "Investigators review evidence and determine the next action.",
+    technical:
+      "Human-in-the-loop governance: ClaimShield recommends investigation and presents evidence, while the SIU investigator records the final decision (Escalate, Request Documentation, Monitor or Clear).",
   },
 ];
 
@@ -234,62 +241,40 @@ export default function DashboardPage() {
             <div className="flex flex-wrap items-center gap-2">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#acf2e5] text-[#042126] text-xs font-mono font-semibold">
                 <Sparkles className="w-3.5 h-3.5 text-[#209b47]" />
-                <span>ACENTRA HEALTH SIU INTELLIGENCE</span>
+                <span>INVESTIGATION INTELLIGENCE PLATFORM</span>
               </div>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#042126] text-[#acf2e5] text-[11px] font-mono font-semibold">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#f2fcff] text-[#005f68] border border-[#042126]/15 text-[11px] font-mono font-semibold">
                 DEMO • SYNTHETIC DATA
               </span>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-[#209b47] leading-[1.15]">
-              CLAIMSHIELD <span className="text-[#005f68]">NEXUS</span>
-            </h1>
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-[#209b47] leading-[1.15]">
+                CLAIMSHIELD <span className="text-[#005f68]">NEXUS</span>
+              </h1>
+              <div className="text-xs font-mono font-semibold text-[#005f68] mt-1">
+                &ldquo;Find the claims that don&apos;t add up.&rdquo;
+              </div>
+            </div>
 
             {/* Concise Product Statement (Requirement 1) */}
             <p className="text-base sm:text-lg font-semibold text-[#042126] leading-snug">
               Multi-signal investigation intelligence for suspicious healthcare claims.
             </p>
 
-            {/* Very Short Explanation (Requirement 1) */}
+            {/* Supporting Text (Requirement 1) */}
             <p className="text-xs sm:text-sm text-[#042126]/80 leading-relaxed max-w-xl">
               ClaimShield Nexus combines claim rules, anomaly detection, network intelligence and temporal patterns to prioritize cases for SIU investigators — while keeping the final decision with a human investigator.
             </p>
 
-            {/* Workflow Sequence Pill Bar (Core Product Message) */}
-            <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-[11px] font-mono font-semibold text-[#005f68]">
-              {[
-                "CLAIM",
-                "ANALYSIS",
-                "MULTI-SIGNAL EVIDENCE",
-                "RISK SCORE",
-                "INVESTIGATION",
-                "HUMAN DECISION",
-              ].map((stepLabel, idx, arr) => (
-                <React.Fragment key={stepLabel}>
-                  <span
-                    className={`px-2 py-0.5 rounded border ${
-                      stepLabel === "HUMAN DECISION"
-                        ? "bg-[#209b47] text-white border-[#209b47]"
-                        : "bg-[#f2fcff] text-[#042126] border-[#042126]/15"
-                    }`}
-                  >
-                    {stepLabel}
-                  </span>
-                  {idx < arr.length - 1 && (
-                    <span className="text-[#005f68] font-bold">→</span>
-                  )}
-                </React.Fragment>
-              ))}
-            </div>
-
-            {/* Compact Scale Metrics Strip (Requirement 1) */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+            {/* Compact 6-Metric Dataset Strip (Requirement 1) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
               <div className="px-3 py-2 rounded-xl bg-[#f2fcff] border border-[#042126]/10">
                 <div className="text-sm font-mono font-bold text-[#042126]">
                   10,000+ Claims
                 </div>
                 <div className="text-[10px] text-[#042126]/70">
-                  Synthetic stream
+                  Analyzed claim stream
                 </div>
               </div>
               <div className="px-3 py-2 rounded-xl bg-[#f2fcff] border border-[#042126]/10">
@@ -297,7 +282,23 @@ export default function DashboardPage() {
                   500 Providers
                 </div>
                 <div className="text-[10px] text-[#042126]/70">
+                  Specialty benchmarked
+                </div>
+              </div>
+              <div className="px-3 py-2 rounded-xl bg-[#f2fcff] border border-[#042126]/10">
+                <div className="text-sm font-mono font-bold text-[#042126]">
+                  1,000 Members
+                </div>
+                <div className="text-[10px] text-[#042126]/70">
+                  Longitudinal histories
+                </div>
+              </div>
+              <div className="px-3 py-2 rounded-xl bg-[#f2fcff] border border-[#042126]/10">
+                <div className="text-sm font-mono font-bold text-[#042126]">
                   100 Facilities
+                </div>
+                <div className="text-[10px] text-[#042126]/70">
+                  Regional care centers
                 </div>
               </div>
               <div className="px-3 py-2 rounded-xl bg-[#f2fcff] border border-[#042126]/10">
@@ -305,7 +306,7 @@ export default function DashboardPage() {
                   1,216+ Referrals
                 </div>
                 <div className="text-[10px] text-[#042126]/70">
-                  Graph relationships
+                  Referral relationships
                 </div>
               </div>
               <div className="px-3 py-2 rounded-xl bg-[#acf2e5]/45 border border-[#209b47]/30">
@@ -313,13 +314,13 @@ export default function DashboardPage() {
                   4 Detection Engines
                 </div>
                 <div className="text-[10px] text-[#042126]/75">
-                  Explainable scoring
+                  Explainable risk score
                 </div>
               </div>
             </div>
 
-            {/* Primary & Secondary Demo CTAs (Requirement 13) */}
-            <div className="flex flex-wrap items-center gap-3 pt-1.5">
+            {/* Primary & Secondary Demo CTAs (Requirement 18 & 19) */}
+            <div className="flex flex-wrap items-center gap-2.5 pt-1.5">
               <Link
                 href="/cases/CASE-1842"
                 className="px-5 py-2.5 rounded-full bg-[#209b47] hover:bg-[#1b843c] text-white font-semibold text-xs sm:text-sm transition-all duration-150 hover:-translate-y-[1px] shadow-[0_3px_8px_rgba(4,33,38,0.1)] flex items-center gap-2"
@@ -331,31 +332,62 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() =>
+                  window.dispatchEvent(
+                    new CustomEvent("open-risk-analysis-modal")
+                  )
+                }
+                className="px-4 py-2.5 rounded-full bg-white hover:bg-[#042126] text-[#042126] hover:text-white border-[1.5px] border-[#042126] font-semibold text-xs transition-colors duration-150 flex items-center gap-2 cursor-pointer"
+              >
+                <span>ANALYZE CLAIM</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
                   window.dispatchEvent(new CustomEvent("open-case-diff-modal"))
                 }
                 className="px-4 py-2.5 rounded-full bg-[#042126] hover:bg-[#005f68] text-[#acf2e5] font-mono font-semibold text-xs transition-colors duration-150 flex items-center gap-2 cursor-pointer"
               >
-                <span>CASE-1842 BILLING DIFF</span>
+                <span>COMPARE BILLING EVIDENCE</span>
               </button>
+            </div>
 
-              <MagneticButton
-                onClick={() => {
-                  setActiveWorkspaceTab("lab");
-                  document
-                    .getElementById("command-workspace")
-                    ?.scrollIntoView({ behavior: "smooth" });
-                }}
-                className="px-5 py-2.5 rounded-full bg-white hover:bg-[#042126] text-[#042126] hover:text-white border-[1.5px] border-[#042126] font-semibold text-xs sm:text-sm transition-colors duration-150 flex items-center gap-2"
+            {/* Guided 2-Minute Judge Demo Path (Requirement 18) */}
+            <div className="pt-2 border-t border-[#042126]/10 flex flex-wrap items-center gap-1.5 text-[11px] font-mono">
+              <span className="font-bold text-[#005f68] mr-1">DEMO PATH:</span>
+              <Link
+                href="/cases/CASE-1842"
+                className="px-2 py-0.5 rounded bg-[#209b47]/15 text-[#209b47] font-bold hover:underline"
               >
-                <span>ANALYZE CLAIM (LIVE LAB)</span>
-              </MagneticButton>
-
+                1. High-Risk Case
+              </Link>
+              <span className="text-[#042126]/35">→</span>
+              <Link
+                href="/cases/CASE-1842#why-flagged"
+                className="px-2 py-0.5 rounded bg-[#f2fcff] border border-[#042126]/10 text-[#042126] hover:border-[#209b47]"
+              >
+                2. Why Flagged?
+              </Link>
+              <span className="text-[#042126]/35">→</span>
+              <Link
+                href="/cases/CASE-1842#risk-breakdown"
+                className="px-2 py-0.5 rounded bg-[#f2fcff] border border-[#042126]/10 text-[#042126] hover:border-[#209b47]"
+              >
+                3. Risk Breakdown
+              </Link>
+              <span className="text-[#042126]/35">→</span>
               <Link
                 href="/network"
-                className="text-xs font-semibold text-[#15497e] hover:text-[#209b47] hover:underline flex items-center gap-1 px-2 py-1"
+                className="px-2 py-0.5 rounded bg-[#f2fcff] border border-[#042126]/10 text-[#042126] hover:border-[#209b47]"
               >
-                <Network className="w-3.5 h-3.5" />
-                <span>Explore Network Intelligence</span>
+                4. Network
+              </Link>
+              <span className="text-[#042126]/35">→</span>
+              <Link
+                href="/cases/CASE-1842#investigator-action"
+                className="px-2 py-0.5 rounded bg-[#042126] text-[#acf2e5] font-semibold hover:bg-[#005f68]"
+              >
+                5. Investigator Action
               </Link>
             </div>
           </div>
@@ -370,7 +402,7 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* SECTION 2: HOW CLAIMSHIELD ANALYZES A CLAIM (INTERACTIVE DETECTION PIPELINE — REQUIREMENT 2) */}
+      {/* SECTION 2: HOW CLAIMSHIELD WORKS (INTERACTIVE 8-STAGE DETECTION FLOW — REQUIREMENT 2) */}
       <section
         id="how-it-works"
         className="nexus-glass-card rounded-2xl p-5 lg:p-6 space-y-4"
@@ -378,19 +410,19 @@ export default function DashboardPage() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
           <div>
             <div className="text-[11px] font-mono uppercase tracking-wider text-[#005f68] font-bold">
-              MULTI-SIGNAL DETECTION ARCHITECTURE
+              HOW CLAIMSHIELD WORKS
             </div>
             <h2 className="text-base sm:text-lg font-semibold text-[#209b47]">
-              HOW CLAIMSHIELD ANALYZES A CLAIM
+              From Claim Submission to Explainable Risk Score &amp; Human SIU Decision
             </h2>
           </div>
           <span className="text-xs text-[#042126]/70 font-medium">
-            Click any stage below to inspect how the composite risk score is generated
+            Click any stage below to see how evidence signals combine into a normalized risk score
           </span>
         </div>
 
-        {/* Interactive 7-Stage Pipeline Strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+        {/* Interactive 8-Stage Pipeline Strip */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
           {DETECTION_PIPELINE_STAGES.map((stage, idx) => {
             const isSelected = selectedPipelineIdx === idx;
             return (
@@ -410,7 +442,7 @@ export default function DashboardPage() {
                       isSelected ? "text-[#acf2e5]" : "text-[#005f68]"
                     }`}
                   >
-                    STEP {stage.step}
+                    {stage.step}
                   </span>
                   <span
                     className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
@@ -422,7 +454,7 @@ export default function DashboardPage() {
                     {stage.weight}
                   </span>
                 </div>
-                <div className="text-xs font-bold leading-tight">
+                <div className="text-[11px] font-bold leading-tight">
                   {stage.title}
                 </div>
               </button>
@@ -458,8 +490,8 @@ export default function DashboardPage() {
             >
               <span>
                 {showPipelineTechDetails
-                  ? "Hide technical details"
-                  : "View technical details"}
+                  ? "Hide Technical Details"
+                  : "Technical Details"}
               </span>
               {showPipelineTechDetails ? (
                 <ChevronUp className="w-3.5 h-3.5" />
@@ -468,10 +500,10 @@ export default function DashboardPage() {
               )}
             </button>
             <Link
-              href="/analytics"
+              href="/settings"
               className="text-xs font-semibold text-[#209b47] hover:underline flex items-center gap-1"
             >
-              <span>Model Telemetry</span>
+              <span>Model &amp; Governance</span>
               <ArrowRight className="w-3 h-3" />
             </Link>
           </div>

@@ -163,13 +163,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                       onClick={() => setBillingDiffOpen(true)}
                       className="text-[#acf2e5] hover:underline font-mono font-semibold"
                     >
-                      Compare Diff
+                      Compare Billing Evidence
                     </button>
                     <Link
                       href="/cases/CASE-1842"
                       className="text-white hover:text-[#acf2e5] font-semibold flex items-center gap-0.5"
                     >
-                      <span>Open Dossier</span>
+                      <span>Investigate</span>
                       <ArrowUpRight className="w-3 h-3" />
                     </Link>
                   </div>
@@ -180,12 +180,20 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* Bottom Human-in-the-Loop Governance Notice */}
           <div className="p-4 border-t border-[#acf2e5]/15 bg-[#042126]">
-            <div className="flex items-center gap-2 text-xs font-mono text-[#acf2e5]">
-              <Database className="w-3.5 h-3.5 text-[#209b47] shrink-0" />
-              <span>RANDOM_SEED = 42</span>
+            <div className="flex items-center justify-between text-[11px] font-mono text-[#acf2e5]">
+              <span className="flex items-center gap-1.5 font-semibold">
+                <Database className="w-3.5 h-3.5 text-[#209b47] shrink-0" />
+                HUMAN-IN-THE-LOOP SIU
+              </span>
+              <Link
+                href="/settings"
+                className="text-[10px] text-[#acf2e5]/80 hover:text-white underline"
+              >
+                Governance
+              </Link>
             </div>
             <p className="text-[11px] text-[#f2fcff]/80 mt-1.5 leading-relaxed">
-              ClaimShield prioritizes and explains suspicious cases. Final investigation decisions remain with SIU investigators.
+              ClaimShield recommends. The human SIU investigator makes the final decision.
             </p>
           </div>
         </aside>

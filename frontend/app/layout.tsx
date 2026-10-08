@@ -5,7 +5,7 @@ import AppShell from "../components/common/AppShell";
 export const metadata: Metadata = {
   title: "ClaimShield Nexus | SIU Investigation Intelligence Platform",
   description:
-    "AI-powered protection against fraudulent healthcare claims. From suspicious claims to evidence-backed investigations.",
+    "Multi-signal investigation intelligence for suspicious healthcare claims. Combines claim rules, anomaly detection, network intelligence, and temporal patterns for SIU investigators.",
 };
 
 export default function RootLayout({
