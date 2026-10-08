@@ -23,6 +23,7 @@ export default function NetworkIntelligencePage() {
     }[]
   >([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [providerFilter, setProviderFilter] = useState("");
   const [facilityFilter, setFacilityFilter] = useState("");
@@ -33,6 +34,7 @@ export default function NetworkIntelligencePage() {
   useEffect(() => {
     async function load() {
       setLoading(true);
+      setError(null);
       try {
         const res = await getNetworkIntelligence({
           provider: providerFilter || undefined,
@@ -44,6 +46,12 @@ export default function NetworkIntelligencePage() {
         setNodes(res.nodes);
         setEdges(res.edges);
         setClusters(res.clusters);
+      } catch (err: unknown) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to load network intelligence graph"
+        );
       } finally {
         setLoading(false);
       }
@@ -60,12 +68,13 @@ export default function NetworkIntelligencePage() {
               <Network className="w-5 h-5 text-[#209b47]" />
               Network Intelligence &amp; Referral Ring Topology
             </h2>
-            <p className="text-xs text-[#042126]/75">
-              NetworkX graph intelligence surfacing dense provider-facility clusters, reciprocal referral rings, and shared member cliques
+            <p className="text-xs text-[#042126]/85 font-medium mt-0.5">
+              ClaimShield doesn&apos;t analyze claims in isolation. It identifies suspicious relationships across providers, facilities, members and referrals.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
+              type="button"
               onClick={() =>
                 setCaseFilter(caseFilter === "CASE-1842" ? "" : "CASE-1842")
               }
@@ -77,10 +86,23 @@ export default function NetworkIntelligencePage() {
             >
               {caseFilter === "CASE-1842"
                 ? "Viewing CASE-1842 Subgraph (Reset)"
-                : "Focus CASE-1842 Cluster"}
+                : "Focus Flagship CASE-1842 Cluster"}
             </button>
+            <Link
+              href="/cases/CASE-1842"
+              className="px-4 py-2 rounded-full text-xs font-semibold bg-[#042126] hover:bg-[#005f68] text-white transition-colors flex items-center gap-1"
+            >
+              <span>Investigate CASE-1842</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
         </div>
+
+        {error && (
+          <div className="p-3 rounded-lg bg-[#fee2e2] border border-[#b91c1c]/30 text-[#b91c1c] text-xs">
+            {error}
+          </div>
+        )}
 
         {/* Filter Controls */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 text-xs">

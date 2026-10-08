@@ -24,10 +24,12 @@ export default function AnalyticsPage() {
   >([]);
   const [topProviders, setTopProviders] = useState<ProviderProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
       setLoading(true);
+      setError(null);
       try {
         const [summary, rDist, tProvs] = await Promise.all([
           getDashboardSummary(),
@@ -39,6 +41,12 @@ export default function AnalyticsPage() {
         setExposureByCat(summary.exposure_by_category);
         setRiskDist(rDist.provider_distribution);
         setTopProviders(tProvs.providers);
+      } catch (err: unknown) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to load detection analytics"
+        );
       } finally {
         setLoading(false);
       }
@@ -57,6 +65,12 @@ export default function AnalyticsPage() {
           Deep-dive performance across deterministic rules (40%), Scikit-learn Isolation Forest (30%), NetworkX graph topology (20%), and temporal velocity (10%).
         </p>
       </div>
+
+      {error && (
+        <div className="p-4 rounded-xl bg-[#fee2e2] border border-[#b91c1c]/30 text-[#b91c1c] text-xs font-medium">
+          {error}
+        </div>
+      )}
 
       {/* 4 Complementary Detection Approaches Summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

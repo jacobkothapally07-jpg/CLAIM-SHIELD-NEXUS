@@ -37,6 +37,15 @@ const TOP_NAV_LINKS = [
   { label: "Demo", href: "/cases/CASE-1842" },
 ];
 
+const WORKFLOW_JOURNEY = [
+  { step: "1", label: "Overview", href: "/" },
+  { step: "2", label: "SIU Queue", href: "/queue" },
+  { step: "3", label: "Case & Evidence (CASE-1842)", href: "/cases/CASE-1842" },
+  { step: "4", label: "Network Intelligence", href: "/network" },
+  { step: "5", label: "Analytics", href: "/analytics" },
+  { step: "6", label: "Governance & Rules", href: "/settings" },
+];
+
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
@@ -75,7 +84,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             {/* Primary SIU Navigation */}
             <div className="px-3.5 py-5">
               <div className="text-[10px] font-mono uppercase tracking-widest text-[#acf2e5]/70 px-3 mb-2.5">
-                Intelligence Modules
+                Investigation Modules
               </div>
               <nav className="space-y-1">
                 {SIDEBAR_ITEMS.map((item) => {
@@ -108,7 +117,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               {/* Featured CASE-1842 Quick Launch */}
               <div className="mt-6 pt-5 border-t border-[#acf2e5]/15 px-1.5">
                 <div className="text-[10px] font-mono uppercase tracking-widest text-[#acf2e5]/70 px-1 mb-2.5">
-                  Priority Flagship Dossier
+                  Flagship Demo Case
                 </div>
                 <Link
                   href="/cases/CASE-1842"
@@ -119,7 +128,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                       <Sparkles className="w-3.5 h-3.5 text-[#209b47]" /> CASE-1842
                     </span>
                     <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#fee2e2] text-[#b91c1c]">
-                      94 / 100
+                      94 / 100 CRITICAL
                     </span>
                   </div>
                   <div className="text-xs text-white font-semibold flex items-center justify-between">
@@ -134,14 +143,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          {/* Bottom Security Status */}
+          {/* Bottom Human-in-the-Loop Governance Notice */}
           <div className="p-4 border-t border-[#acf2e5]/15 bg-[#042126]">
             <div className="flex items-center gap-2 text-xs font-mono text-[#acf2e5]">
               <Database className="w-3.5 h-3.5 text-[#209b47] shrink-0" />
-              <span>RANDOM_SEED = 42</span>
+              <span>DEMO • SYNTHETIC DATA (SEED=42)</span>
             </div>
-            <p className="text-[11px] text-[#f2fcff]/70 mt-1 leading-relaxed">
-              Human-in-the-loop SIU review. Never declares automated fraud.
+            <p className="text-[11px] text-[#f2fcff]/80 mt-1.5 leading-relaxed">
+              ClaimShield prioritizes and explains suspicious cases. Final investigation decisions remain with SIU investigators.
             </p>
           </div>
         </aside>
@@ -150,43 +159,66 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <div className="flex-1 flex flex-col min-w-0 relative z-20">
           {/* Crisp Enterprise Sticky Top Bar */}
           <header
-            className={`h-16 px-8 flex items-center justify-between sticky top-0 z-30 transition-colors duration-150 ${
+            className={`h-16 px-6 lg:px-8 flex items-center justify-between sticky top-0 z-30 transition-colors duration-150 ${
               scrolled
                 ? "bg-white border-b border-[#042126]/15 shadow-[0_2px_10px_rgba(4,33,38,0.05)]"
                 : "bg-white/95 border-b border-[#042126]/10"
             }`}
           >
-            {/* Top Navigation Links */}
-            <div className="flex items-center gap-6">
-              <nav className="hidden xl:flex items-center gap-6 text-xs font-semibold text-[#15497e]">
-                {TOP_NAV_LINKS.map((item) => (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    className="hover:text-[#209b47] hover:underline underline-offset-4 transition-colors"
-                  >
-                    {item.label}
-                  </Link>
-                ))}
+            {/* Connected Investigation Story Steps */}
+            <div className="flex items-center gap-2 overflow-x-auto">
+              <span className="hidden 2xl:inline text-[10px] font-mono uppercase tracking-wider text-[#005f68] font-bold mr-1">
+                Investigation Flow:
+              </span>
+              <nav className="hidden lg:flex items-center gap-1.5 text-xs">
+                {WORKFLOW_JOURNEY.map((item, idx) => {
+                  const isActive =
+                    item.href === "/"
+                      ? pathname === "/"
+                      : pathname.startsWith(item.href);
+                  return (
+                    <React.Fragment key={item.step}>
+                      <Link
+                        href={item.href}
+                        className={`px-2.5 py-1 rounded-md font-semibold transition-colors whitespace-nowrap ${
+                          isActive
+                            ? "bg-[#042126] text-white"
+                            : "text-[#15497e] hover:bg-[#acf2e5]/40 hover:text-[#042126]"
+                        }`}
+                      >
+                        <span className="font-mono text-[10px] opacity-75 mr-1">
+                          {item.step}.
+                        </span>
+                        {item.label}
+                      </Link>
+                      {idx < WORKFLOW_JOURNEY.length - 1 && (
+                        <span className="text-[#042126]/30 text-[10px] font-mono">
+                          →
+                        </span>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
               </nav>
             </div>
 
-            <div className="flex items-center gap-3">
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-mono font-semibold bg-[#acf2e5] text-[#042126] border border-[#042126]/10">
+            <div className="flex items-center gap-3 shrink-0">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono font-semibold bg-[#acf2e5] text-[#042126] border border-[#042126]/10">
                 <span className="w-2 h-2 rounded-full bg-[#209b47]" />
-                SYNTHETIC DATA • DEMONSTRATION ENVIRONMENT
+                DEMO • SYNTHETIC DATA
               </span>
 
               <Link
                 href="/cases/CASE-1842"
-                className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-[#209b47] hover:bg-[#1b843c] text-white transition-all duration-150 hover:-translate-y-[1px] shadow-[0_3px_8px_rgba(4,33,38,0.1)]"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-[#209b47] hover:bg-[#1b843c] text-white transition-all duration-150 hover:-translate-y-[1px] shadow-[0_3px_8px_rgba(4,33,38,0.1)]"
               >
-                <span>Launch Risk Analysis</span>
+                <span>START DEMO (CASE-1842)</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
               </Link>
             </div>
           </header>
 
-          <main className="flex-1 px-6 lg:px-10 py-8 max-w-[1560px] w-full mx-auto">
+          <main className="flex-1 px-6 lg:px-10 py-7 max-w-[1560px] w-full mx-auto">
             {children}
           </main>
         </div>

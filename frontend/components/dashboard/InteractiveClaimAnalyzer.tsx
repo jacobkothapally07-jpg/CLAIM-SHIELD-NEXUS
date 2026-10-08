@@ -19,11 +19,13 @@ import { formatINR, formatSignalName } from "../../lib/format";
 import { MagneticButton } from "../common/InteractivePrimitives";
 
 const ANALYSIS_STEPS = [
-  { step: "STEP 01", label: "Receiving synthetic claim & encounter telemetry..." },
-  { step: "STEP 02", label: "Checking provider specialty & regional history..." },
-  { step: "STEP 03", label: "Detecting cross-claim & temporal anomalies..." },
-  { step: "STEP 04", label: "Running Isolation Forest + NetworkX fraud-risk models..." },
-  { step: "STEP 05", label: "Generating explainable SIU recommendation..." },
+  { step: "STEP 01", label: "Receiving claim data..." },
+  { step: "STEP 02", label: "Checking policy rules (Rule Engine — 40%)..." },
+  { step: "STEP 03", label: "Analyzing anomalies (Isolation Forest — 30%)..." },
+  { step: "STEP 04", label: "Checking provider/network relationships (NetworkX — 20%)..." },
+  { step: "STEP 05", label: "Evaluating temporal patterns (Temporal Velocity — 10%)..." },
+  { step: "STEP 06", label: "Calculating composite risk..." },
+  { step: "STEP 07", label: "Investigation recommended (Human SIU review)." },
 ];
 
 function SegmentedRiskBar({
@@ -81,7 +83,7 @@ export default function InteractiveClaimAnalyzer({
     samplePool[0] || null
   );
   const [analyzing, setAnalyzing] = useState(false);
-  const [currentStep, setCurrentStep] = useState(5);
+  const [currentStep, setCurrentStep] = useState(ANALYSIS_STEPS.length);
   const [labMode, setLabMode] = useState<"dossier" | "simulator">("dossier");
 
   // Live What-If Sandbox Parameters
@@ -116,7 +118,7 @@ export default function InteractiveClaimAnalyzer({
         setAnalyzing(false);
         setCurrentStep(ANALYSIS_STEPS.length);
       }
-    }, 300);
+    }, 240);
   };
 
   if (!selectedCase) return null;
@@ -184,6 +186,8 @@ export default function InteractiveClaimAnalyzer({
   const activeRule = labMode === "simulator" ? simRuleScore : selectedCase.rule_score;
   const activeMl = labMode === "simulator" ? simMlScore : selectedCase.ml_score;
   const activeGraph = labMode === "simulator" ? simGraphScore : selectedCase.graph_score;
+  const activeTemporal =
+    labMode === "simulator" ? simTemporalScore : selectedCase.temporal_score;
   const activeExposure =
     labMode === "simulator"
       ? Math.max(0, simAmount - simExpected)
@@ -199,13 +203,13 @@ export default function InteractiveClaimAnalyzer({
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-6 border-b border-[#042126]/10">
         <div>
           <div className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[#005f68] font-semibold mb-1">
-            <Cpu className="w-4 h-4 text-[#209b47]" /> Interactive AI Claim-Analysis &amp; What-If Risk Lab
+            <Cpu className="w-4 h-4 text-[#209b47]" /> Multi-Signal Claim Verification &amp; What-If Risk Lab
           </div>
           <h3 className="text-xl font-semibold text-[#209b47]">
-            Real-Time Claim Verification &amp; What-If Sandbox
+            Interactive Claim Analysis &amp; What-If Sandbox
           </h3>
           <p className="text-xs text-[#042126]/75 mt-0.5">
-            Inspect flagged synthetic claim dossiers or switch to the What-If Sandbox to test how billing parameters impact the 4-engine score.
+            Click &ldquo;ANALYZE CLAIM&rdquo; to step through the 4-engine risk calculation or test custom claim parameters in the What-If Simulator.
           </p>
         </div>
 
@@ -243,7 +247,7 @@ export default function InteractiveClaimAnalyzer({
             className="px-5 py-2.5 rounded-full bg-[#209b47] hover:bg-[#1b843c] text-white font-semibold text-xs flex items-center gap-2"
           >
             <Play className="w-3.5 h-3.5 fill-current" />
-            <span>{analyzing ? "Running AI Verification..." : "Run 5-Stage Scan"}</span>
+            <span>{analyzing ? "Analyzing Claim..." : "ANALYZE CLAIM"}</span>
           </MagneticButton>
         </div>
       </div>
@@ -529,30 +533,38 @@ export default function InteractiveClaimAnalyzer({
               )}
             </div>
 
-            {/* Engine Sub-Scores */}
+            {/* Engine Sub-Scores (4 Weighted Detection Engines) */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 py-4 border-t border-[#acf2e5]/20 text-xs">
               <div className="p-3 rounded-lg bg-[#005f68]/30 border border-[#acf2e5]/20">
-                <div className="text-[10px] font-mono text-[#acf2e5]">RULE ENGINE</div>
+                <div className="text-[10px] font-mono text-[#acf2e5]">
+                  RULE ENGINE (40%)
+                </div>
                 <div className="text-base font-bold text-white mt-0.5 tabular-nums">
-                  {activeRule}%
+                  {activeRule} / 100
                 </div>
               </div>
               <div className="p-3 rounded-lg bg-[#005f68]/30 border border-[#acf2e5]/20">
-                <div className="text-[10px] font-mono text-[#acf2e5]">ISOLATION FOREST</div>
+                <div className="text-[10px] font-mono text-[#acf2e5]">
+                  ISOLATION FOREST (30%)
+                </div>
                 <div className="text-base font-bold text-white mt-0.5 tabular-nums">
-                  {activeMl}%
+                  {activeMl} / 100
                 </div>
               </div>
               <div className="p-3 rounded-lg bg-[#005f68]/30 border border-[#acf2e5]/20">
-                <div className="text-[10px] font-mono text-[#acf2e5]">NETWORKX GRAPH</div>
+                <div className="text-[10px] font-mono text-[#acf2e5]">
+                  NETWORK INTEL (20%)
+                </div>
                 <div className="text-base font-bold text-white mt-0.5 tabular-nums">
-                  {activeGraph}%
+                  {activeGraph} / 100
                 </div>
               </div>
               <div className="p-3 rounded-lg bg-[#005f68]/30 border border-[#acf2e5]/20">
-                <div className="text-[10px] font-mono text-[#acf2e5]">EXPOSURE</div>
+                <div className="text-[10px] font-mono text-[#acf2e5]">
+                  TEMPORAL (10%)
+                </div>
                 <div className="text-base font-bold text-[#acf2e5] mt-0.5 tabular-nums">
-                  {formatINR(activeExposure)}
+                  {activeTemporal} / 100
                 </div>
               </div>
             </div>
@@ -572,7 +584,7 @@ export default function InteractiveClaimAnalyzer({
                   activeScore >= 61 ? "text-[#b91c1c]" : "text-[#005f68]"
                 }`}
               >
-                AI Engine Recommendation (Human-in-the-Loop)
+                Multi-Signal Risk Engine Recommendation (Human-in-the-Loop) • Exposure: {formatINR(activeExposure)}
               </div>
               <div className="text-sm font-bold text-[#042126] mt-0.5 flex items-center gap-2">
                 <Sparkles
@@ -582,8 +594,8 @@ export default function InteractiveClaimAnalyzer({
                 />
                 <span>
                   {activeScore >= 61
-                    ? "FLAG FOR HUMAN SIU REVIEW — POTENTIAL FWA PATTERN"
-                    : "STANDARD AUTO-ADJUDICATION — WITHIN PEER BASELINE"}
+                    ? "INVESTIGATION RECOMMENDED — ROUTE TO HUMAN SIU INVESTIGATOR"
+                    : "WITHIN PEER BASELINE — NO SIU ESCALATION REQUIRED"}
                 </span>
               </div>
             </div>
@@ -592,7 +604,7 @@ export default function InteractiveClaimAnalyzer({
               href={`/cases/${selectedCase.case_id}`}
               className="px-4 py-2 rounded-full bg-[#209b47] hover:bg-[#1b843c] text-white font-semibold text-xs transition-colors shrink-0 flex items-center gap-1"
             >
-              <span>Inspect SIU Dossier</span>
+              <span>Investigate Case</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>

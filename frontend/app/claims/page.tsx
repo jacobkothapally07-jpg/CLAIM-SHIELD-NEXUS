@@ -15,6 +15,7 @@ export default function ClaimsExplorerPage() {
   const [claims, setClaims] = useState<EnrichedClaim[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [search, setSearch] = useState("");
   const [risk, setRisk] = useState("ALL");
@@ -27,6 +28,7 @@ export default function ClaimsExplorerPage() {
   useEffect(() => {
     async function load() {
       setLoading(true);
+      setError(null);
       try {
         const res = await getClaims({
           risk,
@@ -40,6 +42,10 @@ export default function ClaimsExplorerPage() {
         });
         setClaims(res.claims);
         setTotal(res.total);
+      } catch (err: unknown) {
+        setError(
+          err instanceof Error ? err.message : "Failed to load synthetic claims"
+        );
       } finally {
         setLoading(false);
       }
@@ -56,16 +62,30 @@ export default function ClaimsExplorerPage() {
               Synthetic Claims Explorer
             </h2>
             <p className="text-xs text-[#042126]/75">
-              Search and filter across 10,000+ generated synthetic claims (CLM-000001 to CLM-010000)
+              Search and filter across 10,000+ generated synthetic claims (CLM-000001 to CLM-010000) ranked by multi-signal risk
             </p>
           </div>
-          <div className="text-xs text-[#042126]/75">
-            Matching Synthetic Claims:{" "}
-            <strong className="text-[#005f68] text-sm font-mono tabular-nums">
-              {total.toLocaleString()}
-            </strong>
+          <div className="flex items-center gap-4 text-xs text-[#042126]/75">
+            <span>
+              Matching Synthetic Claims:{" "}
+              <strong className="text-[#005f68] text-sm font-mono tabular-nums">
+                {loading ? "Loading..." : total.toLocaleString()}
+              </strong>
+            </span>
+            <Link
+              href="/queue"
+              className="text-[#15497e] hover:text-[#209b47] underline font-semibold"
+            >
+              Open SIU Queue →
+            </Link>
           </div>
         </div>
+
+        {error && (
+          <div className="p-3 rounded-lg bg-[#fee2e2] border border-[#b91c1c]/30 text-[#b91c1c] text-xs">
+            {error}
+          </div>
+        )}
 
         {/* Multi-Filter Bar */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2.5 text-xs">

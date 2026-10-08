@@ -42,16 +42,24 @@ export default function ProviderRiskDetailPage() {
   const [cases, setCases] = useState<InvestigationCase[]>([]);
   const [recentClaims, setRecentClaims] = useState<EnrichedClaim[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
       setLoading(true);
+      setError(null);
       try {
         const res = await getProviderDetail(providerId);
         setProvider(res.provider);
         setReferrals(res.referrals);
         setCases(res.cases);
         setRecentClaims(res.recent_claims);
+      } catch (err: unknown) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : `Unable to load provider ${providerId}`
+        );
       } finally {
         setLoading(false);
       }
@@ -59,11 +67,38 @@ export default function ProviderRiskDetailPage() {
     load();
   }, [providerId]);
 
-  if (loading || !provider) {
+  if (loading) {
     return (
       <div className="space-y-6 animate-pulse">
         <div className="h-32 bg-white rounded-xl border border-[#042126]/10" />
         <div className="h-80 bg-white rounded-xl border border-[#042126]/10" />
+      </div>
+    );
+  }
+
+  if (error || !provider) {
+    return (
+      <div className="nexus-glass-card rounded-xl p-6 border border-[#b91c1c]/30 bg-[#fee2e2]/40 space-y-3">
+        <div className="text-base font-bold text-[#b91c1c]">
+          Unable to load Provider Profile ({providerId})
+        </div>
+        <p className="text-xs text-[#042126]/80">
+          {error || "The requested synthetic provider profile could not be found."}
+        </p>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/providers/PROV-0042"
+            className="px-4 py-2 rounded-full bg-[#209b47] text-white text-xs font-semibold"
+          >
+            Open Flagship Provider (PROV-0042)
+          </Link>
+          <Link
+            href="/providers"
+            className="px-4 py-2 rounded-full bg-white border border-[#042126] text-[#042126] text-xs font-semibold"
+          >
+            Return to Providers Directory
+          </Link>
+        </div>
       </div>
     );
   }
@@ -97,15 +132,23 @@ export default function ProviderRiskDetailPage() {
           </p>
         </div>
 
-        {cases.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2.5">
           <Link
-            href={`/cases/${cases[0].case_id}`}
-            className="px-5 py-2.5 rounded-full bg-[#209b47] hover:bg-[#1b843c] text-white text-xs font-semibold flex items-center gap-1.5 transition-colors"
+            href="/network"
+            className="px-4 py-2 rounded-full bg-white hover:bg-[#042126] text-[#042126] hover:text-white border-[1.5px] border-[#042126] text-xs font-semibold transition-colors"
           >
-            <span>Open Linked SIU Case ({cases[0].case_id})</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            Explore Network
           </Link>
-        )}
+          {cases.length > 0 && (
+            <Link
+              href={`/cases/${cases[0].case_id}`}
+              className="px-5 py-2.5 rounded-full bg-[#209b47] hover:bg-[#1b843c] text-white text-xs font-semibold flex items-center gap-1.5 transition-colors"
+            >
+              <span>Investigate Case ({cases[0].case_id})</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* KPI Metrics Row */}

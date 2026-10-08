@@ -13,7 +13,9 @@ import {
 
 export default function ProvidersDirectoryPage() {
   const [providers, setProviders] = useState<ProviderProfile[]>([]);
+  const [total, setTotal] = useState(500);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [risk, setRisk] = useState("ALL");
   const [region, setRegion] = useState("ALL");
@@ -21,6 +23,7 @@ export default function ProvidersDirectoryPage() {
   useEffect(() => {
     async function load() {
       setLoading(true);
+      setError(null);
       try {
         const res = await getProviders({
           risk,
@@ -28,6 +31,13 @@ export default function ProvidersDirectoryPage() {
           search: search || undefined,
         });
         setProviders(res.providers);
+        setTotal(res.total);
+      } catch (err: unknown) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to load synthetic providers"
+        );
       } finally {
         setLoading(false);
       }
@@ -41,10 +51,10 @@ export default function ProvidersDirectoryPage() {
         <div>
           <h2 className="text-lg font-semibold text-[#209b47] flex items-center gap-2">
             <Users className="w-5 h-5 text-[#209b47]" />
-            Synthetic Provider Risk Directory (500 Providers)
+            Synthetic Provider Risk Directory ({loading ? "500" : total} Providers)
           </h2>
           <p className="text-xs text-[#042126]/75">
-            Ranked by composite FWA risk score (Rule + Isolation Forest ML + NetworkX Graph + Temporal)
+            Ranked by composite multi-signal risk score (Rule 40% + Isolation Forest 30% + NetworkX Graph 20% + Temporal 10%)
           </p>
         </div>
 
@@ -85,6 +95,12 @@ export default function ProvidersDirectoryPage() {
           </select>
         </div>
       </div>
+
+      {error && (
+        <div className="p-4 rounded-xl bg-[#fee2e2] border border-[#b91c1c]/30 text-[#b91c1c] text-xs font-medium">
+          {error}
+        </div>
+      )}
 
       <div className="nexus-glass-card rounded-xl overflow-hidden">
         <div className="overflow-x-auto">

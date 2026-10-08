@@ -15,6 +15,7 @@ import {
 export default function SIUQueuePage() {
   const [cases, setCases] = useState<InvestigationCase[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [riskFilter, setRiskFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -23,6 +24,7 @@ export default function SIUQueuePage() {
   useEffect(() => {
     async function load() {
       setLoading(true);
+      setError(null);
       try {
         const res = await getCases({
           risk_level: riskFilter,
@@ -31,6 +33,10 @@ export default function SIUQueuePage() {
           search,
         });
         setCases(res.cases);
+      } catch (err: unknown) {
+        setError(
+          err instanceof Error ? err.message : "Failed to load SIU priority queue"
+        );
       } finally {
         setLoading(false);
       }
@@ -40,71 +46,94 @@ export default function SIUQueuePage() {
 
   return (
     <div className="space-y-6">
-      <div className="nexus-glass-card rounded-xl p-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
-          <h2 className="text-lg font-semibold text-[#209b47]">
-            SIU Priority Investigation Queue
-          </h2>
-          <p className="text-xs text-[#042126]/75">
-            Prioritized cases distilled from 10,000+ synthetic claims using composite risk score, financial exposure, and evidence strength
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2.5 text-xs">
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 text-[#005f68] absolute left-3 top-2.5" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search Case ID, Provider..."
-              className="pl-8 pr-3 py-2 rounded-lg bg-[#f2fcff] border border-[#042126]/15 text-[#042126] placeholder:text-[#042126]/45 focus:outline-none focus:border-[#209b47]"
-            />
+      <div className="nexus-glass-card rounded-xl p-5 space-y-4">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold text-[#209b47]">
+              SIU Priority Investigation Queue
+            </h2>
+            <p className="text-xs text-[#042126]/80 font-medium mt-0.5">
+              Prioritized investigations ranked by composite risk, financial exposure and evidence strength.
+            </p>
           </div>
 
-          <select
-            value={riskFilter}
-            onChange={(e) => setRiskFilter(e.target.value)}
-            className="px-3 py-2 rounded-lg bg-[#f2fcff] border border-[#042126]/15 text-[#042126]"
-          >
-            <option value="ALL">All Risk Levels</option>
-            <option value="CRITICAL">Critical (81–100)</option>
-            <option value="HIGH">High (61–80)</option>
-            <option value="MEDIUM">Medium (31–60)</option>
-          </select>
+          <div className="flex flex-wrap items-center gap-2.5 text-xs">
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-[#005f68] absolute left-3 top-2.5" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search Case ID, Provider..."
+                className="pl-8 pr-3 py-2 rounded-lg bg-[#f2fcff] border border-[#042126]/15 text-[#042126] placeholder:text-[#042126]/45 focus:outline-none focus:border-[#209b47]"
+              />
+            </div>
 
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 rounded-lg bg-[#f2fcff] border border-[#042126]/15 text-[#042126]"
-          >
-            <option value="ALL">All Statuses</option>
-            <option value="New">New</option>
-            <option value="Under Review">Under Review</option>
-            <option value="Escalated">Escalated</option>
-            <option value="Resolved">Resolved</option>
-            <option value="Dismissed">Dismissed</option>
-          </select>
+            <select
+              value={riskFilter}
+              onChange={(e) => setRiskFilter(e.target.value)}
+              className="px-3 py-2 rounded-lg bg-[#f2fcff] border border-[#042126]/15 text-[#042126]"
+            >
+              <option value="ALL">All Risk Levels</option>
+              <option value="CRITICAL">Critical (81–100)</option>
+              <option value="HIGH">High (61–80)</option>
+              <option value="MEDIUM">Medium (31–60)</option>
+            </select>
 
-          <select
-            value={signalFilter}
-            onChange={(e) => setSignalFilter(e.target.value)}
-            className="px-3 py-2 rounded-lg bg-[#f2fcff] border border-[#042126]/15 text-[#042126]"
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 rounded-lg bg-[#f2fcff] border border-[#042126]/15 text-[#042126]"
+            >
+              <option value="ALL">All Statuses</option>
+              <option value="New">New</option>
+              <option value="Under Review">Under Review</option>
+              <option value="Escalated">Escalated</option>
+              <option value="Resolved">Resolved</option>
+              <option value="Dismissed">Dismissed</option>
+            </select>
+
+            <select
+              value={signalFilter}
+              onChange={(e) => setSignalFilter(e.target.value)}
+              className="px-3 py-2 rounded-lg bg-[#f2fcff] border border-[#042126]/15 text-[#042126]"
+            >
+              <option value="ALL">All FWA Signals</option>
+              <option value="duplicate_billing">Duplicate Billing</option>
+              <option value="impossible_timing">Impossible Timing</option>
+              <option value="excessive_utilization">Excessive Utilization</option>
+              <option value="abnormal_billing">Abnormal Billing</option>
+              <option value="upcoding">Upcoding</option>
+              <option value="unbundling">Unbundling</option>
+              <option value="phantom_service">Phantom Service</option>
+              <option value="referral_anomaly">Referral Anomaly</option>
+              <option value="network_anomaly">Network Anomaly</option>
+              <option value="temporal_spike">Temporal Spike</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Human-in-the-Loop Governance Strip */}
+        <div className="pt-3 border-t border-[#042126]/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs">
+          <span className="text-[#042126]/80">
+            <strong className="text-[#005f68]">Human-in-the-Loop SIU Workflow:</strong>{" "}
+            ClaimShield prioritizes and explains suspicious cases. Final investigation decisions remain with SIU investigators.
+          </span>
+          <Link
+            href="/cases/CASE-1842"
+            className="text-[#209b47] hover:underline font-semibold shrink-0 flex items-center gap-1"
           >
-            <option value="ALL">All FWA Signals</option>
-            <option value="duplicate_billing">Duplicate Billing</option>
-            <option value="impossible_timing">Impossible Timing</option>
-            <option value="excessive_utilization">Excessive Utilization</option>
-            <option value="abnormal_billing">Abnormal Billing</option>
-            <option value="upcoding">Upcoding</option>
-            <option value="unbundling">Unbundling</option>
-            <option value="phantom_service">Phantom Service</option>
-            <option value="referral_anomaly">Referral Anomaly</option>
-            <option value="network_anomaly">Network Anomaly</option>
-            <option value="temporal_spike">Temporal Spike</option>
-          </select>
+            <span>Open Flagship Case (CASE-1842)</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
       </div>
+
+      {error && (
+        <div className="p-4 rounded-xl bg-[#fee2e2] border border-[#b91c1c]/30 text-[#b91c1c] text-xs font-medium">
+          Error loading SIU Queue: {error}
+        </div>
+      )}
 
       <div className="nexus-glass-card rounded-xl overflow-hidden">
         <div className="px-5 py-3 border-b border-[#042126]/10 flex items-center justify-between text-xs text-[#042126]/75 bg-[#f2fcff]">

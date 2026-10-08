@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { GraphNode, GraphEdge } from "../../types";
 
 interface RelationshipGraphProps {
@@ -17,6 +18,12 @@ export default function RelationshipGraph({
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(
     nodes[0] || null
   );
+
+  useEffect(() => {
+    if (nodes.length > 0 && (!selectedNode || !nodes.some((n) => n.id === selectedNode.id))) {
+      setSelectedNode(nodes.find((n) => n.type === "Provider") || nodes[0]);
+    }
+  }, [nodes, selectedNode]);
 
   const width = 840;
   const cx = width / 2;
@@ -60,12 +67,31 @@ export default function RelationshipGraph({
     }
   };
 
+  const connectedEdges = selectedNode
+    ? edges.filter(
+        (e) => e.source === selectedNode.id || e.target === selectedNode.id
+      )
+    : [];
+  const facilityCount = connectedEdges.filter((e) =>
+    e.label.includes("FACILITY")
+  ).length;
+  const referralCount = connectedEdges.filter((e) =>
+    e.label.includes("REFERRAL")
+  ).length;
+  const claimCount = connectedEdges.filter(
+    (e) =>
+      e.source.startsWith("CLM-") ||
+      e.target.startsWith("CLM-") ||
+      e.label.includes("CLAIM")
+  ).length;
+  const suspiciousEdgeCount = connectedEdges.filter((e) => e.suspicious).length;
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
       <div className="lg:col-span-3 nexus-glass-card rounded-2xl overflow-hidden">
-        <div className="px-5 py-3 border-b border-[#042126]/10 flex flex-wrap items-center justify-between gap-2 text-xs text-[#042126] bg-[#042126] text-[#f2fcff]">
+        <div className="px-5 py-3 border-b border-[#042126]/10 flex flex-wrap items-center justify-between gap-2 text-xs bg-[#042126] text-[#f2fcff]">
           <span className="font-mono text-[11px] text-[#acf2e5] font-semibold">
-            ENTITY TOPOLOGY GRAPH // CLICK ANY NODE TO INSPECT
+            ENTITY TOPOLOGY GRAPH // CLICK ANY NODE TO INSPECT RELATIONSHIPS
           </span>
           <div className="flex flex-wrap items-center gap-3 text-[#f2fcff]">
             <span className="flex items-center gap-1">
@@ -176,69 +202,95 @@ export default function RelationshipGraph({
         </svg>
       </div>
 
-      {/* Node Inspector Panel */}
+      {/* Node Inspector Panel (Requirement 7) */}
       <div className="nexus-glass-card rounded-2xl p-5 flex flex-col justify-between">
         <div>
           <div className="text-xs font-mono uppercase tracking-wider text-[#005f68] font-semibold mb-3">
-            Entity Node Inspector
+            Selected Node Intelligence
           </div>
           {selectedNode ? (
-            <div className="space-y-3.5">
+            <div className="space-y-3">
               <div>
-                <span className="inline-block text-[11px] font-mono font-semibold px-2.5 py-0.5 rounded bg-[#acf2e5] text-[#042126] mb-1.5">
+                <span className="inline-block text-[11px] font-mono font-semibold px-2.5 py-0.5 rounded bg-[#acf2e5] text-[#042126] mb-1">
                   {selectedNode.type}
                 </span>
                 <div className="text-sm font-bold text-[#042126] break-words">
                   {selectedNode.label}
                 </div>
               </div>
-              <div className="p-3.5 rounded-xl bg-[#f2fcff] border border-[#042126]/10 text-xs text-[#042126] space-y-1.5">
-                <div className="text-[#005f68] font-mono text-[10px] uppercase font-semibold">
-                  Synthetic Attributes
-                </div>
-                <div>{selectedNode.details}</div>
-                <div className="pt-1 text-[#042126]/80">
-                  Risk Indicator:{" "}
-                  <span className="uppercase font-bold text-[#b91c1c]">
-                    {selectedNode.risk}
+
+              {/* Structured Node Fields (Provider, Risk, Claims, Facilities, Referrals, Network Signals) */}
+              <div className="p-3 rounded-xl bg-[#f2fcff] border border-[#042126]/10 text-xs text-[#042126] space-y-1.5">
+                <div className="flex justify-between">
+                  <span className="text-[#042126]/70">Risk Level:</span>
+                  <span className="uppercase font-mono font-bold text-[#b91c1c]">
+                    {selectedNode.risk}{" "}
+                    {selectedNode.risk_score ? `(${selectedNode.risk_score}/100)` : ""}
                   </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#042126]/70">Facilities Linked:</span>
+                  <span className="font-mono font-semibold">{facilityCount}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#042126]/70">Referral Connections:</span>
+                  <span className="font-mono font-semibold">{referralCount}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#042126]/70">Connected Claims:</span>
+                  <span className="font-mono font-semibold">{claimCount}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#042126]/70">Network Signals:</span>
+                  <span className="font-mono font-bold text-[#b91c1c]">
+                    {suspiciousEdgeCount} flagged ties
+                  </span>
+                </div>
+                <div className="pt-1.5 border-t border-[#042126]/10 text-[11px] text-[#042126]/80">
+                  {selectedNode.details}
                 </div>
               </div>
 
-              <div>
-                <div className="text-xs font-mono text-[#005f68] font-semibold uppercase mb-2">
-                  Connected Links
+              {/* Contextual Action Links */}
+              {selectedNode.id.startsWith("PROV-") && (
+                <div className="flex flex-wrap gap-2">
+                  <Link
+                    href={`/providers/${selectedNode.id}`}
+                    className="flex-1 text-center px-3 py-1.5 rounded-full bg-[#209b47] hover:bg-[#1b843c] text-white text-xs font-semibold transition-colors"
+                  >
+                    Open Provider ({selectedNode.id})
+                  </Link>
                 </div>
-                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                  {edges
-                    .filter(
-                      (e) =>
-                        e.source === selectedNode.id ||
-                        e.target === selectedNode.id
-                    )
-                    .map((e) => {
-                      const other =
-                        e.source === selectedNode.id ? e.target : e.source;
-                      return (
-                        <div
-                          key={e.id}
-                          className="text-xs px-3 py-2 rounded-lg bg-[#f2fcff] border border-[#042126]/10 flex items-center justify-between"
+              )}
+
+              <div>
+                <div className="text-xs font-mono text-[#005f68] font-semibold uppercase mb-1.5">
+                  Connected Relationships ({connectedEdges.length})
+                </div>
+                <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                  {connectedEdges.map((e) => {
+                    const other =
+                      e.source === selectedNode.id ? e.target : e.source;
+                    return (
+                      <div
+                        key={e.id}
+                        className="text-xs px-3 py-1.5 rounded-lg bg-[#f2fcff] border border-[#042126]/10 flex items-center justify-between"
+                      >
+                        <span className="text-[#042126] font-mono font-semibold">
+                          {other}
+                        </span>
+                        <span
+                          className={`text-[10px] font-mono px-2 py-0.5 rounded font-semibold ${
+                            e.suspicious
+                              ? "bg-[#fee2e2] text-[#b91c1c]"
+                              : "bg-[#acf2e5] text-[#042126]"
+                          }`}
                         >
-                          <span className="text-[#042126] font-mono font-semibold">
-                            {other}
-                          </span>
-                          <span
-                            className={`text-[10px] font-mono px-2 py-0.5 rounded font-semibold ${
-                              e.suspicious
-                                ? "bg-[#fee2e2] text-[#b91c1c]"
-                                : "bg-[#acf2e5] text-[#042126]"
-                            }`}
-                          >
-                            {e.label}
-                          </span>
-                        </div>
-                      );
-                    })}
+                          {e.label}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>

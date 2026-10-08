@@ -27,6 +27,13 @@ class BriefRequestPayload(BaseModel):
     case_id: str
 
 
+def _resolve_case_id(case_id: str) -> str:
+    upper = case_id.upper()
+    if upper == "CASE-184294":
+        return "CASE-1842"
+    return upper
+
+
 @router.get("/dashboard/summary")
 def get_dashboard_summary():
     total_claims = len(ENGINE.enriched_claims)
@@ -261,6 +268,7 @@ def get_cases(
 
 @router.get("/cases/{case_id}")
 def get_case_detail(case_id: str):
+    case_id = _resolve_case_id(case_id)
     case = ENGINE.cases_by_id.get(case_id)
     if not case:
         raise HTTPException(status_code=404, detail=f"Case {case_id} not found")
@@ -275,6 +283,7 @@ def get_case_detail(case_id: str):
 
 @router.get("/cases/{case_id}/evidence")
 def get_case_evidence(case_id: str):
+    case_id = _resolve_case_id(case_id)
     if case_id not in ENGINE.cases_by_id:
         raise HTTPException(status_code=404, detail=f"Case {case_id} not found")
     return {
@@ -286,6 +295,7 @@ def get_case_evidence(case_id: str):
 
 @router.get("/cases/{case_id}/timeline")
 def get_case_timeline(case_id: str):
+    case_id = _resolve_case_id(case_id)
     if case_id not in ENGINE.cases_by_id:
         raise HTTPException(status_code=404, detail=f"Case {case_id} not found")
     return {
@@ -296,6 +306,7 @@ def get_case_timeline(case_id: str):
 
 @router.get("/cases/{case_id}/graph")
 def get_case_graph(case_id: str):
+    case_id = _resolve_case_id(case_id)
     if case_id not in ENGINE.cases_by_id:
         raise HTTPException(status_code=404, detail=f"Case {case_id} not found")
     return {
@@ -306,6 +317,7 @@ def get_case_graph(case_id: str):
 
 @router.get("/cases/{case_id}/forecast")
 def get_case_forecast(case_id: str):
+    case_id = _resolve_case_id(case_id)
     if case_id not in ENGINE.cases_by_id:
         raise HTTPException(status_code=404, detail=f"Case {case_id} not found")
     return ENGINE.get_case_forecast(case_id)
@@ -313,6 +325,7 @@ def get_case_forecast(case_id: str):
 
 @router.post("/cases/{case_id}/status")
 def update_case_status(case_id: str, payload: StatusUpdatePayload):
+    case_id = _resolve_case_id(case_id)
     if case_id not in ENGINE.cases_by_id:
         raise HTTPException(status_code=404, detail=f"Case {case_id} not found")
     valid_statuses = {"New", "Under Review", "Escalated", "Dismissed", "Resolved"}
@@ -338,6 +351,7 @@ def update_case_status(case_id: str, payload: StatusUpdatePayload):
 
 @router.post("/cases/{case_id}/notes")
 def add_case_note(case_id: str, payload: NoteCreatePayload):
+    case_id = _resolve_case_id(case_id)
     if case_id not in ENGINE.cases_by_id:
         raise HTTPException(status_code=404, detail=f"Case {case_id} not found")
     if not payload.note.strip():
@@ -360,13 +374,14 @@ def add_case_note(case_id: str, payload: NoteCreatePayload):
 
 @router.post("/generate-investigation-brief")
 def create_investigation_brief(payload: BriefRequestPayload):
-    case = ENGINE.cases_by_id.get(payload.case_id)
+    cid = _resolve_case_id(payload.case_id)
+    case = ENGINE.cases_by_id.get(cid)
     if not case:
-        raise HTTPException(status_code=404, detail=f"Case {payload.case_id} not found")
+        raise HTTPException(status_code=404, detail=f"Case {cid} not found")
 
-    evidence = ENGINE.case_evidence.get(payload.case_id, [])
-    forecast = ENGINE.get_case_forecast(payload.case_id)
-    graph_data = ENGINE.get_case_graph(payload.case_id)
+    evidence = ENGINE.case_evidence.get(cid, [])
+    forecast = ENGINE.get_case_forecast(cid)
+    graph_data = ENGINE.get_case_graph(cid)
     return generate_investigation_brief(case, evidence, forecast, graph_data)
 
 

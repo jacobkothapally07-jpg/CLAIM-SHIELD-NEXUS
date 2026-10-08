@@ -15,13 +15,50 @@ import {
   ProviderProfile,
 } from "../types";
 
-const API_BASE = (
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
-).replace(/\/+$/, "");
+const CONFIGURED_API_BASE = (process.env.NEXT_PUBLIC_API_URL || "").replace(
+  /\/+$/,
+  ""
+);
 
 // Fast in-memory session cache so navigating between tabs/pages is instantaneous (0ms lag)
 const GET_CACHE = new Map<string, { timestamp: number; data: unknown }>();
 const CACHE_TTL_MS = 60_000;
+
+function resolvePrimaryApiBase(): string {
+  if (CONFIGURED_API_BASE) {
+    return CONFIGURED_API_BASE;
+  }
+  if (
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1")
+  ) {
+    return "http://localhost:8000";
+  }
+  // On Vercel/production, use built-in Next.js /api route directly for instant 0ms response
+  return "";
+}
+
+async function fetchWithTimeout(
+  url: string,
+  options?: RequestInit,
+  timeoutMs = 3500
+): Promise<Response> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        ...(options?.headers || {}),
+      },
+    });
+  } finally {
+    clearTimeout(id);
+  }
+}
 
 async function fetchJson<T>(path: string, options?: RequestInit): Promise<T> {
   const isGet = !options?.method || options.method.toUpperCase() === "GET";
@@ -35,13 +72,31 @@ async function fetchJson<T>(path: string, options?: RequestInit): Promise<T> {
     GET_CACHE.clear();
   }
 
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options?.headers || {}),
-    },
-  });
+  const primaryBase = resolvePrimaryApiBase();
+  let res: Response | null = null;
+
+  if (primaryBase) {
+    try {
+      res = await fetchWithTimeout(`${primaryBase}${path}`, options, 3500);
+      if (!res.ok) {
+        res = null;
+      }
+    } catch {
+      res = null;
+    }
+  }
+
+  // Fallback to built-in Next.js /api route (deterministic SEED=42 engine dataset)
+  if (!res) {
+    res = await fetch(path, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(options?.headers || {}),
+      },
+    });
+  }
+
   if (!res.ok) {
     const errText = await res.text();
     throw new Error(`API Error ${res.status}: ${errText}`);
