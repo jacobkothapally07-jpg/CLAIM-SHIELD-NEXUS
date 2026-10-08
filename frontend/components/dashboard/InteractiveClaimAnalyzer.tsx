@@ -11,6 +11,8 @@ import {
   Activity,
   Sparkles,
   FileSearch,
+  Sliders,
+  RotateCcw,
 } from "lucide-react";
 import { InvestigationCase } from "../../types";
 import { formatINR, formatSignalName } from "../../lib/format";
@@ -80,6 +82,16 @@ export default function InteractiveClaimAnalyzer({
   );
   const [analyzing, setAnalyzing] = useState(false);
   const [currentStep, setCurrentStep] = useState(5);
+  const [labMode, setLabMode] = useState<"dossier" | "simulator">("dossier");
+
+  // Live What-If Sandbox Parameters
+  const [simAmount, setSimAmount] = useState(145000);
+  const [simExpected, setSimExpected] = useState(32000);
+  const [simDailyClaims, setSimDailyClaims] = useState(44);
+  const [simDuplicate, setSimDuplicate] = useState(true);
+  const [simCrossRegion, setSimCrossRegion] = useState(true);
+  const [simReferralLoop, setSimReferralLoop] = useState(true);
+  const [simUnbundling, setSimUnbundling] = useState(false);
 
   useEffect(() => {
     if (!selectedCase && cases.length > 0) {
@@ -104,13 +116,80 @@ export default function InteractiveClaimAnalyzer({
         setAnalyzing(false);
         setCurrentStep(ANALYSIS_STEPS.length);
       }
-    }, 340);
+    }, 300);
   };
 
   if (!selectedCase) return null;
 
-  const score = selectedCase.risk_score;
-  const level = selectedCase.risk_level;
+  // Dynamic What-If Calculation
+  const costRatio = simAmount / Math.max(1000, simExpected);
+  const simSignals: string[] = [];
+  let simRuleRaw = 10;
+  if (simDuplicate) {
+    simRuleRaw += 24;
+    simSignals.push("duplicate_billing");
+  }
+  if (simCrossRegion) {
+    simRuleRaw += 26;
+    simSignals.push("impossible_timing");
+  }
+  if (costRatio >= 2.2) {
+    simRuleRaw += Math.min(25, Math.round(costRatio * 6));
+    simSignals.push("abnormal_billing");
+    simSignals.push("upcoding");
+  }
+  if (simDailyClaims >= 28) {
+    simRuleRaw += 18;
+    simSignals.push("excessive_utilization");
+  }
+  if (simUnbundling) {
+    simRuleRaw += 15;
+    simSignals.push("unbundling");
+  }
+  if (simReferralLoop) {
+    simSignals.push("referral_anomaly");
+    simSignals.push("network_anomaly");
+  }
+
+  const simRuleScore = Math.min(100, simRuleRaw);
+  const simMlScore = Math.min(
+    100,
+    Math.round(costRatio * 14 + (simDailyClaims / 60) * 45 + (simDuplicate ? 15 : 0))
+  );
+  const simGraphScore = simReferralLoop ? 88 : 24;
+  const simTemporalScore = Math.min(
+    100,
+    (simCrossRegion ? 55 : 15) + Math.round((simDailyClaims / 60) * 40)
+  );
+  const simCompositeScore = Math.min(
+    100,
+    Math.round(
+      0.4 * simRuleScore +
+        0.3 * simMlScore +
+        0.2 * simGraphScore +
+        0.1 * simTemporalScore
+    )
+  );
+  const simLevel =
+    simCompositeScore >= 81
+      ? "CRITICAL"
+      : simCompositeScore >= 61
+      ? "HIGH"
+      : simCompositeScore >= 31
+      ? "MEDIUM"
+      : "LOW";
+
+  const activeScore = labMode === "simulator" ? simCompositeScore : selectedCase.risk_score;
+  const activeLevel = labMode === "simulator" ? simLevel : selectedCase.risk_level;
+  const activeRule = labMode === "simulator" ? simRuleScore : selectedCase.rule_score;
+  const activeMl = labMode === "simulator" ? simMlScore : selectedCase.ml_score;
+  const activeGraph = labMode === "simulator" ? simGraphScore : selectedCase.graph_score;
+  const activeExposure =
+    labMode === "simulator"
+      ? Math.max(0, simAmount - simExpected)
+      : selectedCase.potential_exposure;
+  const activeSignals =
+    labMode === "simulator" ? simSignals : selectedCase.primary_signals;
 
   return (
     <section
@@ -120,59 +199,182 @@ export default function InteractiveClaimAnalyzer({
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-6 border-b border-[#042126]/10">
         <div>
           <div className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[#005f68] font-semibold mb-1">
-            <Cpu className="w-4 h-4 text-[#209b47]" /> Interactive AI Claim-Analysis &amp; Risk Telemetry Lab
+            <Cpu className="w-4 h-4 text-[#209b47]" /> Interactive AI Claim-Analysis &amp; What-If Risk Lab
           </div>
           <h3 className="text-xl font-semibold text-[#209b47]">
-            Real-Time Claim Verification &amp; Anomaly Inspection
+            Real-Time Claim Verification &amp; What-If Sandbox
           </h3>
           <p className="text-xs text-[#042126]/75 mt-0.5">
-            Select any flagged synthetic claim dossier below and trigger the 5-stage multi-engine verification sequence.
+            Inspect flagged synthetic claim dossiers or switch to the What-If Sandbox to test how billing parameters impact the 4-engine score.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          {/* Mode Switcher: Dossier Mode vs What-If Simulator */}
+          <div className="inline-flex p-1 rounded-full bg-[#f2fcff] border border-[#042126]/15 text-xs">
+            <button
+              type="button"
+              onClick={() => setLabMode("dossier")}
+              className={`px-3.5 py-1.5 rounded-full font-semibold transition-colors ${
+                labMode === "dossier"
+                  ? "bg-[#042126] text-white"
+                  : "text-[#042126] hover:bg-[#acf2e5]/40"
+              }`}
+            >
+              Flagged Dossiers
+            </button>
+            <button
+              type="button"
+              onClick={() => setLabMode("simulator")}
+              className={`px-3.5 py-1.5 rounded-full font-semibold transition-colors flex items-center gap-1.5 ${
+                labMode === "simulator"
+                  ? "bg-[#209b47] text-white"
+                  : "text-[#042126] hover:bg-[#acf2e5]/40"
+              }`}
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              <span>What-If Simulator</span>
+            </button>
+          </div>
+
           <MagneticButton
             onClick={() => runLiveSimulation(selectedCase)}
             disabled={analyzing}
             className="px-5 py-2.5 rounded-full bg-[#209b47] hover:bg-[#1b843c] text-white font-semibold text-xs flex items-center gap-2"
           >
             <Play className="w-3.5 h-3.5 fill-current" />
-            <span>{analyzing ? "Running AI Verification..." : "Analyze Claim"}</span>
+            <span>{analyzing ? "Running AI Verification..." : "Run 5-Stage Scan"}</span>
           </MagneticButton>
-
-          <Link
-            href={`/cases/${selectedCase.case_id}`}
-            className="px-5 py-2.5 rounded-full bg-white hover:bg-[#042126] text-[#042126] hover:text-white border-[1.5px] border-[#042126] text-xs font-semibold flex items-center gap-1.5 transition-colors duration-150"
-          >
-            <span>Open Full SIU Dossier</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
         </div>
       </div>
 
-      {/* Claim Selector Pills */}
-      <div className="py-4 flex items-center gap-2 overflow-x-auto border-b border-[#042126]/10">
-        <span className="text-[11px] font-mono uppercase text-[#005f68] font-semibold shrink-0 mr-1 flex items-center gap-1">
-          <FileSearch className="w-3.5 h-3.5 text-[#209b47]" /> Select Claim Dossier:
-        </span>
-        {samplePool.map((c) => {
-          const isSelected = c.case_id === selectedCase.case_id;
-          return (
+      {/* Mode 1: Claim Selector Pills OR Mode 2: Live What-If Sliders */}
+      {labMode === "dossier" ? (
+        <div className="py-4 flex items-center gap-2 overflow-x-auto border-b border-[#042126]/10">
+          <span className="text-[11px] font-mono uppercase text-[#005f68] font-semibold shrink-0 mr-1 flex items-center gap-1">
+            <FileSearch className="w-3.5 h-3.5 text-[#209b47]" /> Select Claim Dossier:
+          </span>
+          {samplePool.map((c) => {
+            const isSelected = c.case_id === selectedCase.case_id;
+            return (
+              <button
+                key={c.case_id}
+                type="button"
+                onClick={() => runLiveSimulation(c)}
+                className={`px-3.5 py-2 rounded-full text-xs font-mono transition-colors duration-150 shrink-0 border ${
+                  isSelected
+                    ? "bg-[#209b47] text-white border-[#209b47] font-semibold"
+                    : "bg-[#acf2e5]/20 text-[#042126] border-[#042126]/10 hover:bg-[#acf2e5]/45"
+                }`}
+              >
+                {c.primary_claim_id} ({c.case_id}) • {c.risk_score}%
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="py-5 border-b border-[#042126]/10 bg-[#f2fcff]/70 px-4 rounded-xl my-3 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="text-xs font-mono font-bold text-[#005f68] uppercase">
+              LIVE WHAT-IF CLAIM PARAMETER SANDBOX (ADJUST SLIDERS TO TEST 4-ENGINE SCORING)
+            </div>
             <button
-              key={c.case_id}
               type="button"
-              onClick={() => runLiveSimulation(c)}
-              className={`px-3.5 py-2 rounded-full text-xs font-mono transition-colors duration-150 shrink-0 border ${
-                isSelected
-                  ? "bg-[#209b47] text-white border-[#209b47] font-semibold"
-                  : "bg-[#acf2e5]/20 text-[#042126] border-[#042126]/10 hover:bg-[#acf2e5]/45"
-              }`}
+              onClick={() => {
+                setSimAmount(145000);
+                setSimExpected(32000);
+                setSimDailyClaims(44);
+                setSimDuplicate(true);
+                setSimCrossRegion(true);
+                setSimReferralLoop(true);
+                setSimUnbundling(false);
+              }}
+              className="text-xs font-semibold text-[#15497e] hover:text-[#209b47] flex items-center gap-1"
             >
-              {c.primary_claim_id} ({c.case_id}) • {c.risk_score}%
+              <RotateCcw className="w-3.5 h-3.5" /> Reset Preset
             </button>
-          );
-        })}
-      </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+            <div className="p-3.5 rounded-xl bg-white border border-[#042126]/10">
+              <div className="flex justify-between font-semibold text-[#042126] mb-1.5">
+                <span>Billed Claim Amount</span>
+                <span className="font-mono text-[#209b47]">{formatINR(simAmount)}</span>
+              </div>
+              <input
+                type="range"
+                min={10000}
+                max={250000}
+                step={5000}
+                value={simAmount}
+                onChange={(e) => setSimAmount(Number(e.target.value))}
+                className="w-full accent-[#209b47]"
+              />
+              <div className="text-[11px] text-[#042126]/65 mt-1">
+                Peer Expected Cost: {formatINR(simExpected)} ({costRatio.toFixed(1)}x benchmark)
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-white border border-[#042126]/10">
+              <div className="flex justify-between font-semibold text-[#042126] mb-1.5">
+                <span>Provider Daily Claim Velocity</span>
+                <span className="font-mono text-[#005f68]">{simDailyClaims} claims/day</span>
+              </div>
+              <input
+                type="range"
+                min={4}
+                max={65}
+                step={1}
+                value={simDailyClaims}
+                onChange={(e) => setSimDailyClaims(Number(e.target.value))}
+                className="w-full accent-[#209b47]"
+              />
+              <div className="text-[11px] text-[#042126]/65 mt-1">
+                Specialty Peer Baseline: 9 claims/day
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-white border border-[#042126]/10 grid grid-cols-2 gap-2">
+              <label className="flex items-center gap-2 cursor-pointer font-medium text-[#042126]">
+                <input
+                  type="checkbox"
+                  checked={simDuplicate}
+                  onChange={(e) => setSimDuplicate(e.target.checked)}
+                  className="accent-[#209b47]"
+                />
+                <span>Duplicate Claim</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer font-medium text-[#042126]">
+                <input
+                  type="checkbox"
+                  checked={simCrossRegion}
+                  onChange={(e) => setSimCrossRegion(e.target.checked)}
+                  className="accent-[#209b47]"
+                />
+                <span>Cross-Region (&lt;1h)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer font-medium text-[#042126]">
+                <input
+                  type="checkbox"
+                  checked={simReferralLoop}
+                  onChange={(e) => setSimReferralLoop(e.target.checked)}
+                  className="accent-[#209b47]"
+                />
+                <span>Circular Referral</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer font-medium text-[#042126]">
+                <input
+                  type="checkbox"
+                  checked={simUnbundling}
+                  onChange={(e) => setSimUnbundling(e.target.checked)}
+                  className="accent-[#209b47]"
+                />
+                <span>Split Unbundling</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-6">
         {/* Left Column: 5-Step Simulated Engine Sequence & Block Risk Bars (5 cols) */}
@@ -224,29 +426,29 @@ export default function InteractiveClaimAnalyzer({
             </div>
             <SegmentedRiskBar
               label="LOW RISK (0–30)"
-              blocksFilled={level === "LOW" ? 3 : 2}
+              blocksFilled={activeLevel === "LOW" ? 3 : 2}
               colorClass="bg-[#209b47]"
-              active={level === "LOW"}
+              active={activeLevel === "LOW"}
             />
             <SegmentedRiskBar
               label="MEDIUM RISK (31–60)"
-              blocksFilled={level === "MEDIUM" ? 6 : 5}
+              blocksFilled={activeLevel === "MEDIUM" ? 6 : 5}
               colorClass="bg-[#d97706]"
-              active={level === "MEDIUM"}
+              active={activeLevel === "MEDIUM"}
             />
             <SegmentedRiskBar
               label="HIGH RISK (61–80)"
-              blocksFilled={level === "HIGH" ? 8 : 7}
+              blocksFilled={activeLevel === "HIGH" ? 8 : 7}
               colorClass="bg-[#c53030]"
-              active={level === "HIGH"}
+              active={activeLevel === "HIGH"}
             />
             <SegmentedRiskBar
               label="CRITICAL RISK (81–100)"
               blocksFilled={
-                level === "CRITICAL" ? Math.round(score / 10) : 9
+                activeLevel === "CRITICAL" ? Math.max(8, Math.round(activeScore / 10)) : 9
               }
               colorClass="bg-[#b91c1c]"
-              active={level === "CRITICAL"}
+              active={activeLevel === "CRITICAL"}
             />
           </div>
         </div>
@@ -261,10 +463,14 @@ export default function InteractiveClaimAnalyzer({
             <div className="flex flex-wrap items-start justify-between gap-4 pb-5 border-b border-[#acf2e5]/20">
               <div>
                 <div className="text-xs font-mono text-[#acf2e5]">
-                  CLAIM #{selectedCase.primary_claim_id} // DOSSIER {selectedCase.case_id}
+                  {labMode === "simulator"
+                    ? "WHAT-IF SANDBOX SIMULATION // SYNTHETIC CLAIM TEST"
+                    : `CLAIM #${selectedCase.primary_claim_id} // DOSSIER ${selectedCase.case_id}`}
                 </div>
                 <h4 className="text-2xl font-semibold text-white mt-1">
-                  {selectedCase.provider_id} • {selectedCase.provider_name}
+                  {labMode === "simulator"
+                    ? "Simulated Claim Scenario"
+                    : `${selectedCase.provider_id} • ${selectedCase.provider_name}`}
                 </h4>
                 <div className="text-xs text-[#f2fcff]/80 mt-1">
                   Specialty: <strong className="text-white">{selectedCase.specialty}</strong> •{" "}
@@ -279,15 +485,17 @@ export default function InteractiveClaimAnalyzer({
                 </div>
                 <div
                   className={`text-3xl font-bold font-mono mt-0.5 px-2.5 py-0.5 rounded inline-block ${
-                    score >= 81
+                    activeScore >= 61
                       ? "bg-[#fee2e2] text-[#b91c1c]"
-                      : "bg-[#fef3c7] text-[#b45309]"
+                      : activeScore >= 31
+                      ? "bg-[#fef3c7] text-[#b45309]"
+                      : "bg-[#acf2e5] text-[#042126]"
                   }`}
                 >
-                  {analyzing ? "--" : `${score}%`}
+                  {analyzing ? "--" : `${activeScore}%`}
                 </div>
                 <div className="text-[11px] text-[#f2fcff]/80 mt-1">
-                  AI Confidence: <strong className="text-[#acf2e5]">96.4%</strong>
+                  Tier: <strong className="text-[#acf2e5]">{activeLevel}</strong>
                 </div>
               </div>
             </div>
@@ -296,71 +504,96 @@ export default function InteractiveClaimAnalyzer({
             <div className="py-5">
               <div className="text-xs font-mono uppercase tracking-wider text-[#acf2e5] mb-3 flex items-center gap-1.5">
                 <ShieldAlert className="w-4 h-4 text-[#209b47]" />
-                Detected Correlated Anomalies ({selectedCase.primary_signals.length})
+                Detected Correlated Anomalies ({activeSignals.length})
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {selectedCase.primary_signals.map((sig) => (
-                  <div
-                    key={sig}
-                    className="p-3 rounded-lg bg-[#005f68]/40 border border-[#acf2e5]/25 flex items-center justify-between text-xs"
-                  >
-                    <span className="font-medium text-white">
-                      • {formatSignalName(sig)}
-                    </span>
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#fee2e2] text-[#b91c1c]">
-                      TRIGGERED
-                    </span>
-                  </div>
-                ))}
-              </div>
+              {activeSignals.length === 0 ? (
+                <div className="p-4 rounded-lg bg-[#005f68]/30 border border-[#acf2e5]/25 text-xs text-[#acf2e5]">
+                  No high-risk FWA signals triggered under current What-If parameters. Claim aligns with peer baseline.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {activeSignals.map((sig) => (
+                    <div
+                      key={sig}
+                      className="p-3 rounded-lg bg-[#005f68]/40 border border-[#acf2e5]/25 flex items-center justify-between text-xs"
+                    >
+                      <span className="font-medium text-white">
+                        • {formatSignalName(sig)}
+                      </span>
+                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#fee2e2] text-[#b91c1c]">
+                        TRIGGERED
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Engine Sub-Scores */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 py-4 border-t border-[#acf2e5]/20 text-xs">
               <div className="p-3 rounded-lg bg-[#005f68]/30 border border-[#acf2e5]/20">
                 <div className="text-[10px] font-mono text-[#acf2e5]">RULE ENGINE</div>
-                <div className="text-base font-bold text-white mt-0.5">
-                  {selectedCase.rule_score}%
+                <div className="text-base font-bold text-white mt-0.5 tabular-nums">
+                  {activeRule}%
                 </div>
               </div>
               <div className="p-3 rounded-lg bg-[#005f68]/30 border border-[#acf2e5]/20">
                 <div className="text-[10px] font-mono text-[#acf2e5]">ISOLATION FOREST</div>
-                <div className="text-base font-bold text-white mt-0.5">
-                  {selectedCase.ml_score}%
+                <div className="text-base font-bold text-white mt-0.5 tabular-nums">
+                  {activeMl}%
                 </div>
               </div>
               <div className="p-3 rounded-lg bg-[#005f68]/30 border border-[#acf2e5]/20">
                 <div className="text-[10px] font-mono text-[#acf2e5]">NETWORKX GRAPH</div>
-                <div className="text-base font-bold text-white mt-0.5">
-                  {selectedCase.graph_score}%
+                <div className="text-base font-bold text-white mt-0.5 tabular-nums">
+                  {activeGraph}%
                 </div>
               </div>
               <div className="p-3 rounded-lg bg-[#005f68]/30 border border-[#acf2e5]/20">
                 <div className="text-[10px] font-mono text-[#acf2e5]">EXPOSURE</div>
-                <div className="text-base font-bold text-[#acf2e5] mt-0.5">
-                  {formatINR(selectedCase.potential_exposure)}
+                <div className="text-base font-bold text-[#acf2e5] mt-0.5 tabular-nums">
+                  {formatINR(activeExposure)}
                 </div>
               </div>
             </div>
           </div>
 
           {/* Recommendation Banner */}
-          <div className="mt-4 p-4 rounded-xl bg-[#fee2e2] text-[#042126] border border-[#b91c1c]/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div
+            className={`mt-4 p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+              activeScore >= 61
+                ? "bg-[#fee2e2] text-[#042126] border-[#b91c1c]/30"
+                : "bg-[#acf2e5] text-[#042126] border-[#209b47]/30"
+            }`}
+          >
             <div>
-              <div className="text-[10px] font-mono uppercase tracking-wider font-bold text-[#b91c1c]">
+              <div
+                className={`text-[10px] font-mono uppercase tracking-wider font-bold ${
+                  activeScore >= 61 ? "text-[#b91c1c]" : "text-[#005f68]"
+                }`}
+              >
                 AI Engine Recommendation (Human-in-the-Loop)
               </div>
               <div className="text-sm font-bold text-[#042126] mt-0.5 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[#b91c1c]" />
-                <span>FLAG FOR HUMAN SIU REVIEW — POTENTIAL FWA PATTERN</span>
+                <Sparkles
+                  className={`w-4 h-4 ${
+                    activeScore >= 61 ? "text-[#b91c1c]" : "text-[#209b47]"
+                  }`}
+                />
+                <span>
+                  {activeScore >= 61
+                    ? "FLAG FOR HUMAN SIU REVIEW — POTENTIAL FWA PATTERN"
+                    : "STANDARD AUTO-ADJUDICATION — WITHIN PEER BASELINE"}
+                </span>
               </div>
             </div>
 
             <Link
               href={`/cases/${selectedCase.case_id}`}
-              className="px-4 py-2 rounded-full bg-[#209b47] hover:bg-[#1b843c] text-white font-semibold text-xs transition-colors shrink-0"
+              className="px-4 py-2 rounded-full bg-[#209b47] hover:bg-[#1b843c] text-white font-semibold text-xs transition-colors shrink-0 flex items-center gap-1"
             >
-              Inspect Evidence &amp; Graph →
+              <span>Inspect SIU Dossier</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>
