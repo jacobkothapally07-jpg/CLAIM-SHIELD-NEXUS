@@ -328,6 +328,16 @@ export default function DashboardPage() {
                 <ArrowRight className="w-4 h-4" />
               </Link>
 
+              <button
+                type="button"
+                onClick={() =>
+                  window.dispatchEvent(new CustomEvent("open-case-diff-modal"))
+                }
+                className="px-4 py-2.5 rounded-full bg-[#042126] hover:bg-[#005f68] text-[#acf2e5] font-mono font-semibold text-xs transition-colors duration-150 flex items-center gap-2 cursor-pointer"
+              >
+                <span>CASE-1842 BILLING DIFF</span>
+              </button>
+
               <MagneticButton
                 onClick={() => {
                   setActiveWorkspaceTab("lab");
@@ -646,17 +656,30 @@ export default function DashboardPage() {
                       }`}
                     >
                       <td className="py-3.5 px-5 font-mono font-bold text-[#042126]">
-                        <Link
-                          href={`/cases/${c.case_id}`}
-                          className="text-[#15497e] hover:text-[#209b47] hover:underline flex items-center gap-2"
-                        >
-                          <span>{c.case_id}</span>
-                          {c.case_id === "CASE-1842" && (
+                        {c.case_id === "CASE-1842" ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              window.dispatchEvent(
+                                new CustomEvent("open-case-diff-modal")
+                              )
+                            }
+                            className="text-[#15497e] hover:text-[#209b47] hover:underline flex items-center gap-2 cursor-pointer text-left"
+                            title="Click to inspect CASE-1842 side-by-side billing diff"
+                          >
+                            <span>{c.case_id}</span>
                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#fee2e2] text-[#b91c1c] font-bold">
-                              FLAGSHIP DEMO
+                              FLAGSHIP • DIFF
                             </span>
-                          )}
-                        </Link>
+                          </button>
+                        ) : (
+                          <Link
+                            href={`/cases/${c.case_id}`}
+                            className="text-[#15497e] hover:text-[#209b47] hover:underline flex items-center gap-2"
+                          >
+                            <span>{c.case_id}</span>
+                          </Link>
+                        )}
                       </td>
                       <td className="py-3.5 px-5">
                         <Link

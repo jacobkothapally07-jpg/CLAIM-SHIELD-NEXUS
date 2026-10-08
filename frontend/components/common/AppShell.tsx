@@ -15,8 +15,14 @@ import {
   Database,
   Sparkles,
   ArrowUpRight,
+  GitCompare,
 } from "lucide-react";
 import { SmoothScrollAndSpotlight } from "./InteractivePrimitives";
+import {
+  ZeroGravityParticleCanvas,
+  RiskEngineTerminalModal,
+  CaseBillingDiffModal,
+} from "./ZeroGravityAndModals";
 
 const SIDEBAR_ITEMS = [
   { name: "Overview", href: "/", icon: LayoutDashboard },
@@ -26,15 +32,6 @@ const SIDEBAR_ITEMS = [
   { name: "Providers", href: "/providers", icon: Users },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Settings", href: "/settings", icon: Settings },
-];
-
-const TOP_NAV_LINKS = [
-  { label: "Product", href: "/" },
-  { label: "How It Works", href: "/#how-it-works" },
-  { label: "Risk Engine", href: "/#risk-engine-lab" },
-  { label: "Analytics", href: "/analytics" },
-  { label: "About", href: "/settings" },
-  { label: "Demo", href: "/cases/CASE-1842" },
 ];
 
 const WORKFLOW_JOURNEY = [
@@ -49,18 +46,33 @@ const WORKFLOW_JOURNEY = [
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
+  const [riskTerminalOpen, setRiskTerminalOpen] = useState(false);
+  const [billingDiffOpen, setBillingDiffOpen] = useState(false);
 
   useEffect(() => {
     const onScroll = () => {
       setScrolled(window.scrollY > 18);
     };
+    const onOpenTerminal = () => setRiskTerminalOpen(true);
+    const onOpenDiff = () => setBillingDiffOpen(true);
+
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    window.addEventListener("open-risk-analysis-modal", onOpenTerminal);
+    window.addEventListener("open-case-diff-modal", onOpenDiff);
+
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("open-risk-analysis-modal", onOpenTerminal);
+      window.removeEventListener("open-case-diff-modal", onOpenDiff);
+    };
   }, []);
 
   return (
     <SmoothScrollAndSpotlight>
-      <div className="min-h-screen bg-[#f2fcff] nexus-grid-bg text-[#042126] flex">
+      <div className="min-h-screen bg-[#f2fcff] nexus-grid-bg text-[#042126] flex relative">
+        {/* 1. Interactive Zero-Gravity Floating Particle Layer Behind Cards */}
+        <ZeroGravityParticleCanvas />
+
         {/* Grounded Acentra Obsidian Pine Left Command Rail (#042126) */}
         <aside className="w-64 shrink-0 bg-[#042126] border-r border-[#005f68]/40 flex flex-col justify-between sticky top-0 h-screen z-30 text-[#f2fcff]">
           <div>
@@ -84,7 +96,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             {/* Primary SIU Navigation */}
             <div className="px-3.5 py-5">
               <div className="text-[10px] font-mono uppercase tracking-widest text-[#acf2e5]/70 px-3 mb-2.5">
-                Investigation Modules
+                Intelligence Modules
               </div>
               <nav className="space-y-1">
                 {SIDEBAR_ITEMS.map((item) => {
@@ -114,31 +126,51 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 })}
               </nav>
 
-              {/* Featured CASE-1842 Quick Launch */}
+              {/* Priority Flagship Dossier (CASE-1842, Score 94/100, PROV-0042) Pinned in Sidebar */}
               <div className="mt-6 pt-5 border-t border-[#acf2e5]/15 px-1.5">
                 <div className="text-[10px] font-mono uppercase tracking-widest text-[#acf2e5]/70 px-1 mb-2.5">
-                  Flagship Demo Case
+                  Priority Flagship Dossier
                 </div>
-                <Link
-                  href="/cases/CASE-1842"
-                  className="block p-3.5 rounded-xl bg-[#005f68]/35 border border-[#acf2e5]/30 hover:border-[#acf2e5] transition duration-150 group"
-                >
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-bold font-mono text-[#acf2e5] flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-[#209b47]" /> CASE-1842
-                    </span>
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#fee2e2] text-[#b91c1c]">
-                      94 / 100 CRITICAL
-                    </span>
+                <div className="p-3.5 rounded-xl bg-[#005f68]/35 border border-[#acf2e5]/30 hover:border-[#acf2e5] transition duration-150 space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => setBillingDiffOpen(true)}
+                    className="w-full text-left group"
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-xs font-bold font-mono text-[#acf2e5] flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-[#209b47]" /> CASE-1842
+                      </span>
+                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#fee2e2] text-[#b91c1c]">
+                        94 / 100
+                      </span>
+                    </div>
+                    <div className="text-xs text-white font-semibold flex items-center justify-between">
+                      <span>PROV-0042 • 6 Signals</span>
+                      <GitCompare className="w-3.5 h-3.5 text-[#acf2e5] group-hover:scale-110 transition-transform" />
+                    </div>
+                    <div className="text-[11px] text-[#f2fcff]/75 mt-0.5">
+                      Click for Side-by-Side Billing Diff
+                    </div>
+                  </button>
+
+                  <div className="pt-2 border-t border-[#acf2e5]/15 flex items-center justify-between text-[11px]">
+                    <button
+                      type="button"
+                      onClick={() => setBillingDiffOpen(true)}
+                      className="text-[#acf2e5] hover:underline font-mono font-semibold"
+                    >
+                      Compare Diff
+                    </button>
+                    <Link
+                      href="/cases/CASE-1842"
+                      className="text-white hover:text-[#acf2e5] font-semibold flex items-center gap-0.5"
+                    >
+                      <span>Open Dossier</span>
+                      <ArrowUpRight className="w-3 h-3" />
+                    </Link>
                   </div>
-                  <div className="text-xs text-white font-semibold flex items-center justify-between">
-                    <span>PROV-0042 • 6 Signals</span>
-                    <ArrowUpRight className="w-3.5 h-3.5 text-[#acf2e5] group-hover:translate-x-0.5 transition-transform" />
-                  </div>
-                  <div className="text-[11px] text-[#f2fcff]/75 mt-0.5">
-                    Duplicate, Timing, Network &amp; Spike
-                  </div>
-                </Link>
+                </div>
               </div>
             </div>
           </div>
@@ -147,7 +179,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <div className="p-4 border-t border-[#acf2e5]/15 bg-[#042126]">
             <div className="flex items-center gap-2 text-xs font-mono text-[#acf2e5]">
               <Database className="w-3.5 h-3.5 text-[#209b47] shrink-0" />
-              <span>DEMO • SYNTHETIC DATA (SEED=42)</span>
+              <span>RANDOM_SEED = 42</span>
             </div>
             <p className="text-[11px] text-[#f2fcff]/80 mt-1.5 leading-relaxed">
               ClaimShield prioritizes and explains suspicious cases. Final investigation decisions remain with SIU investigators.
@@ -203,18 +235,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </div>
 
             <div className="flex items-center gap-3 shrink-0">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono font-semibold bg-[#acf2e5] text-[#042126] border border-[#042126]/10">
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-mono font-semibold bg-[#acf2e5] text-[#042126] border border-[#042126]/10">
                 <span className="w-2 h-2 rounded-full bg-[#209b47]" />
-                DEMO • SYNTHETIC DATA
+                SYNTHETIC DATA • DEMONSTRATION ENVIRONMENT
               </span>
 
-              <Link
-                href="/cases/CASE-1842"
+              <button
+                type="button"
+                onClick={() => setRiskTerminalOpen(true)}
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-[#209b47] hover:bg-[#1b843c] text-white transition-all duration-150 hover:-translate-y-[1px] shadow-[0_3px_8px_rgba(4,33,38,0.1)]"
               >
-                <span>START DEMO (CASE-1842)</span>
-                <ArrowUpRight className="w-3.5 h-3.5" />
-              </Link>
+                <span>Launch Risk Analysis</span>
+              </button>
             </div>
           </header>
 
@@ -222,6 +254,19 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             {children}
           </main>
         </div>
+
+        {/* 2. Animated Risk Engine Typewriter Popover */}
+        <RiskEngineTerminalModal
+          open={riskTerminalOpen}
+          onClose={() => setRiskTerminalOpen(false)}
+          onOpenBillingDiff={() => setBillingDiffOpen(true)}
+        />
+
+        {/* 3. Side-by-Side Billing Diff Modal for CASE-1842 */}
+        <CaseBillingDiffModal
+          open={billingDiffOpen}
+          onClose={() => setBillingDiffOpen(false)}
+        />
       </div>
     </SmoothScrollAndSpotlight>
   );

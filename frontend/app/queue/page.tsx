@@ -181,17 +181,30 @@ export default function SIUQueuePage() {
                     }`}
                   >
                     <td className="py-3.5 px-4 font-mono font-bold">
-                      <Link
-                        href={`/cases/${c.case_id}`}
-                        className="text-[#15497e] hover:text-[#209b47] hover:underline flex items-center gap-1.5"
-                      >
-                        <span>{c.case_id}</span>
-                        {c.case_id === "CASE-1842" && (
+                      {c.case_id === "CASE-1842" ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            window.dispatchEvent(
+                              new CustomEvent("open-case-diff-modal")
+                            )
+                          }
+                          className="text-[#15497e] hover:text-[#209b47] hover:underline flex items-center gap-1.5 cursor-pointer text-left"
+                          title="Click to inspect CASE-1842 side-by-side billing diff"
+                        >
+                          <span>{c.case_id}</span>
                           <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#fee2e2] text-[#b91c1c] font-bold">
-                            FLAGSHIP
+                            FLAGSHIP • DIFF
                           </span>
-                        )}
-                      </Link>
+                        </button>
+                      ) : (
+                        <Link
+                          href={`/cases/${c.case_id}`}
+                          className="text-[#15497e] hover:text-[#209b47] hover:underline flex items-center gap-1.5"
+                        >
+                          <span>{c.case_id}</span>
+                        </Link>
+                      )}
                     </td>
                     <td className="py-3.5 px-4">
                       <Link
