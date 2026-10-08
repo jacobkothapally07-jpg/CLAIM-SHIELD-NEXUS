@@ -34,15 +34,6 @@ const SIDEBAR_ITEMS = [
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
-const WORKFLOW_JOURNEY = [
-  { step: "1", label: "Overview", href: "/" },
-  { step: "2", label: "SIU Queue", href: "/queue" },
-  { step: "3", label: "Case & Evidence (CASE-1842)", href: "/cases/CASE-1842" },
-  { step: "4", label: "Network Intelligence", href: "/network" },
-  { step: "5", label: "Analytics", href: "/analytics" },
-  { step: "6", label: "Governance & Rules", href: "/settings" },
-];
-
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
@@ -67,6 +58,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  const currentModule =
+    SIDEBAR_ITEMS.find((item) =>
+      item.href === "/" ? pathname === "/" : pathname.startsWith(item.href)
+    )?.name || "Case Investigation Dossier";
+
   return (
     <SmoothScrollAndSpotlight>
       <div className="min-h-screen bg-[#f2fcff] nexus-grid-bg text-[#042126] flex relative">
@@ -79,14 +75,21 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             {/* Brand Identity */}
             <div className="p-5 border-b border-[#acf2e5]/15">
               <Link href="/" className="flex items-center gap-3 group">
-                <div className="w-9 h-9 rounded-lg bg-[#209b47] flex items-center justify-center text-white transition-colors group-hover:bg-[#1b843c]">
+                <div className="w-9 h-9 rounded-lg bg-[#209b47] flex items-center justify-center text-white transition-colors group-hover:bg-[#1b843c] shadow-sm">
                   <ShieldAlert className="w-5 h-5" />
                 </div>
                 <div>
-                  <div className="font-bold tracking-tight text-sm text-white">
-                    CLAIMSHIELD NEXUS
+                  <div
+                    className="text-[15px] font-semibold tracking-[0.04em] leading-tight text-white"
+                    style={{
+                      fontFamily:
+                        "'Plus Jakarta Sans', 'Avenir Next', 'Segoe UI', system-ui, sans-serif",
+                    }}
+                  >
+                    CLAIMSHIELD{" "}
+                    <span className="text-[#acf2e5] font-medium">NEXUS</span>
                   </div>
-                  <div className="text-[11px] text-[#acf2e5] font-mono">
+                  <div className="text-[10px] text-[#acf2e5]/85 font-mono tracking-[0.08em] mt-0.5">
                     ACENTRA HEALTH SIU
                   </div>
                 </div>
@@ -197,41 +200,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 : "bg-white/95 border-b border-[#042126]/10"
             }`}
           >
-            {/* Connected Investigation Story Steps */}
-            <div className="flex items-center gap-2 overflow-x-auto">
-              <span className="hidden 2xl:inline text-[10px] font-mono uppercase tracking-wider text-[#005f68] font-bold mr-1">
-                Investigation Flow:
+            {/* Clean Active Workspace Indicator (No Redundant Navigation Flow) */}
+            <div className="flex items-center gap-2.5">
+              <span className="text-xs font-semibold text-[#042126]">
+                {currentModule}
               </span>
-              <nav className="hidden lg:flex items-center gap-1.5 text-xs">
-                {WORKFLOW_JOURNEY.map((item, idx) => {
-                  const isActive =
-                    item.href === "/"
-                      ? pathname === "/"
-                      : pathname.startsWith(item.href);
-                  return (
-                    <React.Fragment key={item.step}>
-                      <Link
-                        href={item.href}
-                        className={`px-2.5 py-1 rounded-md font-semibold transition-colors whitespace-nowrap ${
-                          isActive
-                            ? "bg-[#042126] text-white"
-                            : "text-[#15497e] hover:bg-[#acf2e5]/40 hover:text-[#042126]"
-                        }`}
-                      >
-                        <span className="font-mono text-[10px] opacity-75 mr-1">
-                          {item.step}.
-                        </span>
-                        {item.label}
-                      </Link>
-                      {idx < WORKFLOW_JOURNEY.length - 1 && (
-                        <span className="text-[#042126]/30 text-[10px] font-mono">
-                          →
-                        </span>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-              </nav>
+              <span className="text-[#042126]/25 text-xs">•</span>
+              <span className="hidden sm:inline text-xs text-[#005f68] font-medium">
+                SIU Investigation Intelligence Platform
+              </span>
             </div>
 
             <div className="flex items-center gap-3 shrink-0">
