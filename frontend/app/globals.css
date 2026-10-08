@@ -1,0 +1,83 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --acentra-obsidian: #042126;
+  --acentra-green: #209b47;
+  --acentra-green-hover: #1b843c;
+  --acentra-teal: #005f68;
+  --acentra-mint: #acf2e5;
+  --acentra-navy: #15497e;
+  --acentra-white: #ffffff;
+  --acentra-glacier: #f2fcff;
+}
+
+html {
+  scroll-behavior: smooth;
+  color-scheme: light;
+}
+
+body {
+  background-color: var(--acentra-glacier);
+  color: var(--acentra-obsidian);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  overflow-x: hidden;
+}
+
+/* Calm, Matte Acentra Health Corporate Canvas */
+.nexus-grid-bg {
+  background-color: #f2fcff;
+  background-image: 
+    linear-gradient(to right, rgba(4, 33, 38, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(4, 33, 38, 0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* Matte Enterprise Acentra Card (No neon halos or glossy glassmorphism) */
+.nexus-glass-card {
+  background: #ffffff;
+  border: 1px solid rgba(4, 33, 38, 0.1);
+  box-shadow: 0 2px 10px rgba(4, 33, 38, 0.04);
+  transition: border-color 0.18s ease-out, transform 0.18s ease-out, box-shadow 0.18s ease-out;
+}
+
+.nexus-glass-card:hover {
+  transform: translateY(-2px);
+  border-color: #acf2e5;
+  box-shadow: 0 6px 18px rgba(4, 33, 38, 0.05);
+}
+
+/* Dark Obsidian Panel variant for high-contrast command sections */
+.acentra-dark-panel {
+  background: #042126;
+  color: #f2fcff;
+  border: 1px solid rgba(172, 242, 229, 0.35);
+}
+
+/* Size-aware container query support */
+.metric-grid-container {
+  container-type: inline-size;
+}
+
+/* Subtle progress bar scan (matte, restrained) */
+@keyframes pulse-scan {
+  0%, 100% {
+    opacity: 0.35;
+    transform: translateX(-100%);
+  }
+  50% {
+    opacity: 0.85;
+    transform: translateX(100%);
+  }
+}
+
+.animate-data-stream {
+  animation: pulse-scan 4.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-data-stream {
+    animation: none;
+  }
+}
