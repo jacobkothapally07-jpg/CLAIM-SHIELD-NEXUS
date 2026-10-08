@@ -25,6 +25,17 @@ app.add_middleware(
 app.include_router(api_router)
 
 
+@app.get("/")
+def root():
+    return {
+        "service": "ClaimShield Nexus API",
+        "status": "online",
+        "environment": "SYNTHETIC DATA • DEMONSTRATION ENVIRONMENT",
+        "docs": "/docs",
+        "health": "/health",
+    }
+
+
 @app.get("/health")
 def health_check():
     return {

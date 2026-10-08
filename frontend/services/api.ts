@@ -19,20 +19,38 @@ const API_BASE = (
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 ).replace(/\/+$/, "");
 
+// Fast in-memory session cache so navigating between tabs/pages is instantaneous (0ms lag)
+const GET_CACHE = new Map<string, { timestamp: number; data: unknown }>();
+const CACHE_TTL_MS = 60_000;
+
 async function fetchJson<T>(path: string, options?: RequestInit): Promise<T> {
+  const isGet = !options?.method || options.method.toUpperCase() === "GET";
+  if (isGet) {
+    const cached = GET_CACHE.get(path);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+      return cached.data as T;
+    }
+  } else {
+    // Invalidate cache on POST/mutation so updated status/notes reflect immediately
+    GET_CACHE.clear();
+  }
+
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
       ...(options?.headers || {}),
     },
-    cache: "no-store",
   });
   if (!res.ok) {
     const errText = await res.text();
     throw new Error(`API Error ${res.status}: ${errText}`);
   }
-  return res.json();
+  const data = (await res.json()) as T;
+  if (isGet) {
+    GET_CACHE.set(path, { timestamp: Date.now(), data });
+  }
+  return data;
 }
 
 export async function getDashboardSummary(): Promise<{

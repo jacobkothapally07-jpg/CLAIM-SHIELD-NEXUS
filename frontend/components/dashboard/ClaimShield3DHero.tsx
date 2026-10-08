@@ -2,7 +2,7 @@
 
 import React, { useRef, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Float, Line, Sphere, Icosahedron } from "@react-three/drei";
+import { Line, Sphere, Icosahedron } from "@react-three/drei";
 import * as THREE from "three";
 
 const PIPELINE_NODES: {
@@ -35,10 +35,10 @@ function ShieldCoreAndPipeline({ activeStage }: { activeStage: number }) {
     []
   );
 
-  // Calm matte floating points
+  // Lightweight floating points
   const particlePositions = useMemo(() => {
-    const arr = new Float32Array(60 * 3);
-    for (let i = 0; i < 60; i++) {
+    const arr = new Float32Array(36 * 3);
+    for (let i = 0; i < 36; i++) {
       arr[i * 3] = ((Math.sin(i * 12.9898) * 43758.5453) % 1) * 8 - 4;
       arr[i * 3 + 1] = ((Math.cos(i * 78.233) * 43758.5453) % 1) * 3.6 - 1.8;
       arr[i * 3 + 2] = ((Math.sin(i * 45.164) * 43758.5453) % 1) * 3 - 1.5;
@@ -48,25 +48,25 @@ function ShieldCoreAndPipeline({ activeStage }: { activeStage: number }) {
 
   useFrame((state, delta) => {
     if (groupRef.current) {
-      const targetX = state.pointer.x * 0.2;
-      const targetY = state.pointer.y * 0.14;
+      const targetX = state.pointer.x * 0.16;
+      const targetY = state.pointer.y * 0.12;
       groupRef.current.rotation.y = THREE.MathUtils.lerp(
         groupRef.current.rotation.y,
         targetX,
-        0.05
+        0.06
       );
       groupRef.current.rotation.x = THREE.MathUtils.lerp(
         groupRef.current.rotation.x,
         -targetY,
-        0.05
+        0.06
       );
     }
     if (shieldRef.current) {
-      shieldRef.current.rotation.y += delta * 0.22;
-      shieldRef.current.rotation.z += delta * 0.1;
+      shieldRef.current.rotation.y += delta * 0.18;
+      shieldRef.current.rotation.z += delta * 0.08;
     }
     if (pulseRef.current) {
-      const t = (state.clock.elapsedTime * 0.38) % 1;
+      const t = (state.clock.elapsedTime * 0.35) % 1;
       const idx = Math.floor(t * (PIPELINE_NODES.length - 1));
       const frac = t * (PIPELINE_NODES.length - 1) - idx;
       const p1 = linePoints[idx];
@@ -78,63 +78,53 @@ function ShieldCoreAndPipeline({ activeStage }: { activeStage: number }) {
   return (
     <group ref={groupRef}>
       {/* Central Grounded Acentra Wireframe Lattice */}
-      <Float speed={1.2} rotationIntensity={0.2} floatIntensity={0.35}>
-        <Icosahedron ref={shieldRef} args={[1.35, 1]} position={[0, 0.1, -0.5]}>
-          <meshStandardMaterial
-            color="#005f68"
-            wireframe
-            transparent
-            opacity={0.32}
-          />
-        </Icosahedron>
-      </Float>
+      <Icosahedron ref={shieldRef} args={[1.35, 1]} position={[0, 0.1, -0.5]}>
+        <meshBasicMaterial
+          color="#005f68"
+          wireframe
+          transparent
+          opacity={0.35}
+        />
+      </Icosahedron>
 
       {/* Connecting Pipeline Line */}
       <Line
         points={linePoints}
         color="#acf2e5"
-        lineWidth={1.6}
+        lineWidth={1.5}
         transparent
         opacity={0.5}
       />
 
       {/* Traveling Data Packet */}
-      <Sphere ref={pulseRef} args={[0.085, 16, 16]}>
+      <Sphere ref={pulseRef} args={[0.085, 12, 12]}>
         <meshBasicMaterial color="#209b47" />
       </Sphere>
 
-      {/* 5 Pipeline Nodes (Matte Clinical) */}
+      {/* 5 Pipeline Nodes (Low-poly matte clinical for 60fps) */}
       {PIPELINE_NODES.map((node, index) => {
         const isActive = activeStage === index;
         return (
-          <Float
-            key={node.id}
-            speed={1.4}
-            rotationIntensity={0.15}
-            floatIntensity={0.25}
-          >
-            <group position={node.pos}>
-              <Sphere args={[isActive ? 0.23 : 0.16, 24, 24]}>
-                <meshStandardMaterial
-                  color={node.color}
-                  roughness={0.55}
-                  metalness={0.25}
-                />
-              </Sphere>
-              {/* Solid Ring (No neon glow) */}
-              <mesh rotation={[Math.PI / 2, 0, 0]}>
-                <ringGeometry
-                  args={[isActive ? 0.31 : 0.23, isActive ? 0.34 : 0.25, 32]}
-                />
-                <meshBasicMaterial
-                  color={isActive ? "#acf2e5" : node.color}
-                  side={THREE.DoubleSide}
-                  transparent
-                  opacity={isActive ? 0.9 : 0.4}
-                />
-              </mesh>
-            </group>
-          </Float>
+          <group key={node.id} position={node.pos}>
+            <Sphere args={[isActive ? 0.23 : 0.16, 16, 16]}>
+              <meshStandardMaterial
+                color={node.color}
+                roughness={0.6}
+                metalness={0.2}
+              />
+            </Sphere>
+            <mesh rotation={[Math.PI / 2, 0, 0]}>
+              <ringGeometry
+                args={[isActive ? 0.31 : 0.23, isActive ? 0.34 : 0.25, 24]}
+              />
+              <meshBasicMaterial
+                color={isActive ? "#acf2e5" : node.color}
+                side={THREE.DoubleSide}
+                transparent
+                opacity={isActive ? 0.9 : 0.4}
+              />
+            </mesh>
+          </group>
         );
       })}
 
@@ -206,12 +196,15 @@ export default function ClaimShield3DHero({
         </span>
       </div>
 
-      {/* 3D Canvas */}
+      {/* 3D Canvas (Optimized DPR=1 and low-power WebGL for zero lag) */}
       <div className="h-[290px] sm:h-[330px] w-full relative bg-[#042126]">
-        <Canvas camera={{ position: [0, 0, 5.4], fov: 45 }} dpr={[1, 1.5]}>
-          <ambientLight intensity={0.85} />
-          <pointLight position={[5, 5, 5]} intensity={1.0} color="#acf2e5" />
-          <pointLight position={[-5, -3, 3]} intensity={0.7} color="#209b47" />
+        <Canvas
+          camera={{ position: [0, 0, 5.4], fov: 45 }}
+          dpr={1}
+          gl={{ antialias: true, powerPreference: "high-performance" }}
+        >
+          <ambientLight intensity={0.95} />
+          <pointLight position={[5, 5, 5]} intensity={0.9} color="#acf2e5" />
           <ShieldCoreAndPipeline activeStage={activeStage} />
         </Canvas>
 

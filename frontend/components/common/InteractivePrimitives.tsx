@@ -1,40 +1,12 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
-import Lenis from "lenis";
+import React, { useEffect, useState } from "react";
 
 export function SmoothScrollAndSpotlight({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  useEffect(() => {
-    const prefersReducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
-    ).matches;
-
-    let lenis: Lenis | null = null;
-    let rafId = 0;
-
-    if (!prefersReducedMotion) {
-      lenis = new Lenis({
-        duration: 1.0,
-        smoothWheel: true,
-      });
-
-      const raf = (time: number) => {
-        lenis?.raf(time);
-        rafId = requestAnimationFrame(raf);
-      };
-      rafId = requestAnimationFrame(raf);
-    }
-
-    return () => {
-      if (rafId) cancelAnimationFrame(rafId);
-      lenis?.destroy();
-    };
-  }, []);
-
   return <div className="relative min-h-screen">{children}</div>;
 }
 
@@ -70,11 +42,8 @@ export function TiltCard({
   children: React.ReactNode;
   className?: string;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-
   return (
     <div
-      ref={ref}
       className={`transition-all duration-150 ease-out hover:-translate-y-[2px] hover:border-[#acf2e5] hover:shadow-[0_6px_18px_rgba(4,33,38,0.05)] ${className}`}
     >
       {children}
@@ -86,7 +55,7 @@ export function AnimatedCounter({
   value,
   prefix = "",
   suffix = "",
-  duration = 950,
+  duration = 500,
   formatFn,
 }: {
   value: number;
@@ -95,7 +64,7 @@ export function AnimatedCounter({
   duration?: number;
   formatFn?: (val: number) => string;
 }) {
-  const [displayValue, setDisplayValue] = useState(0);
+  const [displayValue, setDisplayValue] = useState(value);
 
   useEffect(() => {
     let startTime: number | null = null;
